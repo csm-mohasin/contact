@@ -739,30 +739,26 @@ function loadAdminDashboard(){showScreen('adminScreen');window.location.hash='#a
 const MASTER_PASSCODE='samiya';
 
 // ===== OFFLINE CACHE =====
+// Cache stores contacts AND passcode access tokens so limit/expiry still enforced offline
 function setCachedContacts(data){try{localStorage.setItem('cv_cache',JSON.stringify(data));}catch{}}
 function getCachedContacts(){try{const d=localStorage.getItem('cv_cache');return d?JSON.parse(d):null;}catch{return null;}}
+// Stores which passcodes have been SUCCESSFULLY verified online (with their used count at that time)
+function setCachedPassToken(code,usedCount){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');t[code]={usedCount,ts:Date.now()};localStorage.setItem('cv_pass_tokens',JSON.stringify(t));}catch{}}
+function getCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');return t[code]||null;}catch{return null;}}
+function deleteCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');delete t[code];localStorage.setItem('cv_pass_tokens',JSON.stringify(t));}catch{}}
 
-async function loadUserContacts(){
-  const {getDocs,collection}=window._fbFns;const db=window._db;
-  try{
-    const cSnap=await getDocs(collection(db,'contacts'));
-    _allContacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
-    setCachedContacts(_allContacts);
-  }catch(err){
-    const cached=getCachedContacts();
-    if(cached){_allContacts=cached;showToast('📦 Offline — showing cached contacts','warn');}
-    else throw err;
-  }
-  const favs=getFavs();_allContacts.forEach(c=>{if(favs.includes(c.id))c.starred=true;});
-  const totalNums=_allContacts.reduce((s,c)=>s+(c.phones?.length||0),0);
-  const totalFavs=_allContacts.filter(c=>c.starred).length;
-  document.getElementById('userTotalContacts').textContent=_allContacts.length;
+function showUserScreen(contacts){
+  const favs=getFavs();contacts.forEach(c=>{if(favs.includes(c.id))c.starred=true;});
+  _allContacts=contacts;
+  const totalNums=contacts.reduce((s,c)=>s+(c.phones?.length||0),0);
+  const totalFavs=contacts.filter(c=>c.starred).length;
+  document.getElementById('userTotalContacts').textContent=contacts.length;
   document.getElementById('userTotalNumbers').textContent=totalNums;
   document.getElementById('userTotalFavs').textContent=totalFavs;
-  showToast('✅ Access granted!','success');showScreen('userScreen');renderUserContacts();
+  showScreen('userScreen');renderUserContacts();
 }
 
-// ===== USER LOGIN (Master + Multi-Passcode + Limit + Expiry) =====
+// ===== USER LOGIN (Master + Multi-Passcode + Limit + Expiry + Offline) =====
 async function userLogin(){
   const input=document.getElementById('userPasscode').value.trim();
   if(!input){showToast('Enter passcode!','error');return;}
@@ -770,17 +766,50 @@ async function userLogin(){
   errBox.style.display='none';
   const btn=document.getElementById('userLoginBtn');btn.disabled=true;btn.textContent='Checking...';
 
-  // Master passcode — always works offline too
+  const isOnline=navigator.onLine;
+
+  // ── MASTER PASSCODE ──────────────────────────────────────
+  // Always allowed. Online: fetch fresh. Offline: use cache.
   if(input===MASTER_PASSCODE){
-    try{await loadUserContacts();}
-    catch(err){
+    if(isOnline){
+      try{
+        const {getDocs,collection}=window._fbFns;
+        const cSnap=await getDocs(collection(window._db,'contacts'));
+        const contacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+        setCachedContacts(contacts);
+        showToast('✅ Access granted!','success');
+        showUserScreen(contacts);
+      }catch(err){
+        // Firebase failed despite being "online" (slow connection)
+        const cached=getCachedContacts();
+        if(cached){showToast('📦 Using cached contacts','warn');showUserScreen(cached);}
+        else{errBox.textContent='⛔ Could not load contacts. Try again.';errBox.style.display='block';}
+      }
+    }else{
+      // Offline — master always allowed, use cache
       const cached=getCachedContacts();
-      if(cached){_allContacts=cached;const favs=getFavs();_allContacts.forEach(c=>{if(favs.includes(c.id))c.starred=true;});showToast('📦 Offline mode','warn');showScreen('userScreen');renderUserContacts();}
-      else{errBox.textContent='⛔ Offline and no cache available.';errBox.style.display='block';}
+      if(cached){showToast('📦 Offline — cached contacts','warn');showUserScreen(cached);}
+      else{errBox.textContent='⛔ No internet & no cached data yet. Login online first.';errBox.style.display='block';}
     }
     btn.disabled=false;btn.textContent='Access Contacts →';return;
   }
 
+  // ── REGULAR PASSCODE ─────────────────────────────────────
+  if(!isOnline){
+    // Offline: only allow if passcode was previously verified online
+    const token=getCachedPassToken(input);
+    if(!token){
+      errBox.textContent='⛔ No internet. This passcode needs online verification first.';
+      errBox.style.display='block';btn.disabled=false;btn.textContent='Access Contacts →';return;
+    }
+    // Passcode was verified before — show cached contacts (limit already enforced online)
+    const cached=getCachedContacts();
+    if(cached){showToast('📦 Offline mode — cached contacts','warn');showUserScreen(cached);}
+    else{errBox.textContent='⛔ No cached data. Login online first.';errBox.style.display='block';}
+    btn.disabled=false;btn.textContent='Access Contacts →';return;
+  }
+
+  // Online: full verification
   const {getDocs,collection,doc,updateDoc}=window._fbFns;const db=window._db;
   try{
     const snap=await getDocs(collection(db,'passcodes'));
@@ -792,19 +821,30 @@ async function userLogin(){
       if(!pc.enabled){errMsg='This passcode is currently disabled.';break;}
       if(pc.expiry&&new Date(pc.expiry)<now){errMsg='This passcode expired on '+pc.expiry+'.';break;}
       const used=pc.usedCount||0,limit=pc.limit||0;
-      if(limit>0&&used>=limit){errMsg='This passcode has reached its limit ('+limit+' uses).';break;}
+      if(limit>0&&used>=limit){
+        // Limit reached — also remove any cached token so offline won't work either
+        deleteCachedPassToken(input);
+        errMsg='This passcode has reached its limit ('+limit+' uses).';break;
+      }
       matched=pc;break;
     }
     if(errMsg||!matched){
       errBox.textContent='⛔ '+(errMsg||'Wrong passcode!');errBox.style.display='block';
       btn.disabled=false;btn.textContent='Access Contacts →';return;
     }
-    await updateDoc(doc(db,'passcodes',matched.id),{usedCount:(matched.usedCount||0)+1});
-    await loadUserContacts();
+    const newCount=(matched.usedCount||0)+1;
+    await updateDoc(doc(db,'passcodes',matched.id),{usedCount:newCount});
+    // Save token so offline access is possible ONLY for this passcode
+    setCachedPassToken(input,newCount);
+
+    // Fetch and cache contacts
+    const cSnap=await getDocs(collection(db,'contacts'));
+    const contacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+    setCachedContacts(contacts);
+    showToast('✅ Access granted!','success');
+    showUserScreen(contacts);
   }catch(err){
-    const cached=getCachedContacts();
-    if(cached){_allContacts=cached;const favs=getFavs();_allContacts.forEach(c=>{if(favs.includes(c.id))c.starred=true;});showToast('📦 Offline — cached data','warn');showScreen('userScreen');renderUserContacts();}
-    else{errBox.textContent='⛔ No internet & no cached data.';errBox.style.display='block';}
+    errBox.textContent='⛔ Connection error. Check internet.';errBox.style.display='block';
   }
   finally{btn.disabled=false;btn.textContent='Access Contacts →';}
 }
