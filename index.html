@@ -154,11 +154,42 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 
 .toggle-switch input:checked+.toggle-slider{background:var(--accent2);}
 .toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px);}
 @media(max-width:768px){
-  .sidebar{width:100%;flex-direction:row;flex-wrap:wrap;gap:6px;padding:12px;}
+  /* Admin layout: stack vertically */
+  .admin-layout{flex-direction:column;}
+  .sidebar{width:100%;flex-direction:row;flex-wrap:nowrap;gap:4px;padding:10px 12px;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border);min-height:unset;}
   .sidebar-logo,.sidebar-bottom{display:none;}
+  .nav-item{padding:8px 10px;font-size:12px;white-space:nowrap;flex-shrink:0;margin-bottom:0;}
   .admin-content{padding:14px;}
   .card{padding:24px 18px;}
+  /* Hide last action column on small screens */
   .contacts-table th:last-child,.contacts-table td:last-child{display:none;}
+  /* Toolbar wrap */
+  .toolbar{flex-direction:column;align-items:flex-start;}
+  .toolbar-left,.toolbar-right{width:100%;justify-content:flex-start;}
+  /* User body full width */
+  .user-body{padding:14px;}
+  .action-bar{flex-wrap:wrap;}
+  /* Stats bar scroll */
+  .stats-bar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;}
+  /* Table scroll */
+  .contacts-table,.user-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  /* Modal full width */
+  .modal{padding:20px 16px;border-radius:16px;}
+  /* Page title smaller */
+  .page-title{font-size:15px;}
+  /* Upload zone smaller */
+  .upload-zone{padding:28px 16px;}
+  /* Passcode row stack */
+  .passcode-row{flex-direction:column;align-items:flex-start;}
+  .passcode-actions{flex-direction:row;width:100%;margin-top:8px;}
+}
+@media(max-width:480px){
+  .toolbar-left,.toolbar-right{gap:6px;}
+  .icon-btn{padding:5px 10px;font-size:11px;}
+  .copy-all-btn{padding:5px 10px;font-size:11px;}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+  .user-header{padding:10px 14px;}
+  .user-header-logo{font-size:13px;}
 }
 </style>
 </head>
