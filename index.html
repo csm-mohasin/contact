@@ -6,518 +6,158 @@
   <title>Contact Vault</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet"/>
   <style>
-    :root {
-      --bg: #0a0a0f;
-      --surface: #13131a;
-      --surface2: #1c1c27;
-      --border: #2a2a3d;
-      --accent: #00e5ff;
-      --accent2: #7c3aed;
-      --accent3: #f59e0b;
-      --text: #e8e8f0;
-      --muted: #6b6b8a;
-      --danger: #ef4444;
-      --success: #10b981;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Sora', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* BG Grid */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .glow-orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: 0;
-    }
-    .glow-orb-1 {
-      width: 400px; height: 400px;
-      background: rgba(124,58,237,0.15);
-      top: -100px; right: -100px;
-    }
-    .glow-orb-2 {
-      width: 300px; height: 300px;
-      background: rgba(0,229,255,0.1);
-      bottom: -50px; left: -50px;
-    }
-
-    /* SCREENS */
-    .screen {
-      display: none;
-      position: relative;
-      z-index: 1;
-      min-height: 100vh;
-      animation: fadeIn 0.4s ease;
-    }
-    .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* CARD */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 40px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 0 60px rgba(0,229,255,0.05), 0 20px 60px rgba(0,0,0,0.4);
-    }
-
-    .logo {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    .logo-icon {
-      width: 56px; height: 56px;
-      background: linear-gradient(135deg, var(--accent2), var(--accent));
-      border-radius: 16px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      margin-bottom: 12px;
-      box-shadow: 0 0 30px rgba(0,229,255,0.2);
-    }
-    .logo h1 {
-      font-family: 'Space Mono', monospace;
-      font-size: 22px;
-      letter-spacing: -0.5px;
-      color: var(--text);
-    }
-    .logo p {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    /* FORM */
-    .form-group { margin-bottom: 18px; }
-    label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="number"] {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-family: 'Space Mono', monospace;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(0,229,255,0.1);
-    }
-
-    /* BUTTONS */
-    .btn {
-      width: 100%;
-      padding: 13px;
-      border: none;
-      border-radius: 10px;
-      font-family: 'Sora', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      letter-spacing: 0.3px;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent2), var(--accent));
-      color: #fff;
-      box-shadow: 0 4px 20px rgba(0,229,255,0.2);
-    }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,229,255,0.3); }
-    .btn-secondary {
-      background: var(--surface2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      margin-top: 10px;
-    }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-danger {
-      background: rgba(239,68,68,0.1);
-      color: var(--danger);
-      border: 1px solid rgba(239,68,68,0.3);
-      margin-top: 10px;
-    }
-    .btn-danger:hover { background: rgba(239,68,68,0.2); }
-    .btn-sm {
-      width: auto;
-      padding: 6px 14px;
-      font-size: 12px;
-      border-radius: 8px;
-    }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-
-    .switch-link {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .switch-link span {
-      color: var(--accent);
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .switch-link span:hover { text-decoration: underline; }
-
-    /* TOAST */
-    #toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 24px;
-      font-size: 13px;
-      font-weight: 600;
-      z-index: 9999;
-      transition: transform 0.3s ease, opacity 0.3s ease;
-      opacity: 0;
-      white-space: nowrap;
-    }
-    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-    #toast.success { border-color: var(--success); color: var(--success); }
-    #toast.error { border-color: var(--danger); color: var(--danger); }
-    #toast.info { border-color: var(--accent); color: var(--accent); }
-
-    /* ADMIN DASHBOARD */
-    #adminScreen { justify-content: flex-start; padding: 0; }
-    .admin-layout {
-      display: flex;
-      width: 100%;
-      min-height: 100vh;
-    }
-
-    .sidebar {
-      width: 240px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      padding: 28px 20px;
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-    }
-    .sidebar-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 32px;
-    }
-    .sidebar-logo .icon {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--accent2), var(--accent));
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-    }
-    .sidebar-logo span {
-      font-family: 'Space Mono', monospace;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-bottom: 4px;
-    }
-    .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active { background: rgba(0,229,255,0.08); color: var(--accent); border: 1px solid rgba(0,229,255,0.15); }
-    .nav-item .nav-icon { font-size: 16px; }
-    .sidebar-bottom { margin-top: auto; }
-
-    .admin-content {
-      flex: 1;
-      padding: 32px;
-      overflow-y: auto;
-    }
-
-    .page-title {
-      font-family: 'Space Mono', monospace;
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .page-title::before {
-      content: '';
-      display: inline-block;
-      width: 4px; height: 20px;
-      background: linear-gradient(var(--accent2), var(--accent));
-      border-radius: 2px;
-    }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    /* UPLOAD ZONE */
-    .upload-zone {
-      border: 2px dashed var(--border);
-      border-radius: 16px;
-      padding: 48px 24px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s;
-      background: var(--surface);
-    }
-    .upload-zone:hover, .upload-zone.dragover {
-      border-color: var(--accent);
-      background: rgba(0,229,255,0.03);
-    }
-    .upload-zone .upload-icon { font-size: 40px; margin-bottom: 12px; }
-    .upload-zone h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-    .upload-zone p { font-size: 13px; color: var(--muted); }
-    #vcfFileInput { display: none; }
-
-    /* CONTACTS TABLE */
-    .contacts-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .contacts-count {
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .contacts-count strong { color: var(--accent); }
-
-    .contacts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 12px;
-    }
-    .contact-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      transition: border-color 0.2s;
-    }
-    .contact-card:hover { border-color: var(--accent); }
-    .contact-name {
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .phone-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      color: var(--accent);
-      margin: 2px 2px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .phone-chip:hover { background: rgba(0,229,255,0.1); border-color: var(--accent); }
-
-    /* SETTINGS */
-    .settings-section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 20px;
-    }
-    .settings-section h3 {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--accent);
-      margin-bottom: 16px;
-      font-family: 'Space Mono', monospace;
-      letter-spacing: 0.5px;
-    }
-    .passcode-display {
-      font-family: 'Space Mono', monospace;
-      font-size: 28px;
-      letter-spacing: 8px;
-      color: var(--accent);
-      margin: 12px 0;
-      text-align: center;
-    }
-
-    /* USER SCREEN */
-    .user-header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-    }
-    .user-header-logo {
-      font-family: 'Space Mono', monospace;
-      font-size: 16px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    #userScreen { justify-content: flex-start; }
-    .user-body {
-      padding: 28px;
-      width: 100%;
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-
-    .search-bar {
-      width: 100%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 16px 12px 44px;
-      color: var(--text);
-      font-family: 'Sora', sans-serif;
-      font-size: 14px;
-      outline: none;
-      margin-bottom: 20px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b6b8a' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: 14px center;
-      transition: border-color 0.2s;
-    }
-    .search-bar:focus { border-color: var(--accent); }
-
-    .stats-bar {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .stat-pill {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-    }
-    .stat-pill strong { color: var(--accent); }
-
-    /* LOADING */
-    .spinner {
-      width: 32px; height: 32px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin: 40px auto;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--muted);
-    }
-    .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
-
-    /* BADGE */
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .badge-admin { background: rgba(245,158,11,0.15); color: var(--accent3); border: 1px solid rgba(245,158,11,0.3); }
-    .badge-user { background: rgba(0,229,255,0.1); color: var(--accent); border: 1px solid rgba(0,229,255,0.2); }
-
-    /* COPY ALL BTN */
-    .copy-all-btn {
-      background: rgba(0,229,255,0.08);
-      border: 1px solid rgba(0,229,255,0.2);
-      color: var(--accent);
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: 'Sora', sans-serif;
-      transition: all 0.2s;
-    }
-    .copy-all-btn:hover { background: rgba(0,229,255,0.15); }
-
-    @media (max-width: 768px) {
-      .admin-layout { flex-direction: column; }
-      .sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; gap: 8px; padding: 16px; }
-      .sidebar-logo { display: none; }
-      .sidebar-bottom { display: none; }
-      .admin-content { padding: 16px; }
-      .card { padding: 28px 20px; }
-    }
+    :root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c27;--border:#2a2a3d;--accent:#00e5ff;--accent2:#7c3aed;--accent3:#f59e0b;--text:#e8e8f0;--muted:#6b6b8a;--danger:#ef4444;--success:#10b981;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+    .glow-orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;}
+    .glow-orb-1{width:400px;height:400px;background:rgba(124,58,237,0.15);top:-100px;right:-100px;}
+    .glow-orb-2{width:300px;height:300px;background:rgba(0,229,255,0.1);bottom:-50px;left:-50px;}
+    .screen{display:none;position:relative;z-index:1;min-height:100vh;animation:fadeIn 0.4s ease;}
+    .screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:420px;box-shadow:0 0 60px rgba(0,229,255,0.05),0 20px 60px rgba(0,0,0,0.4);}
+    .logo{text-align:center;margin-bottom:32px;}
+    .logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;box-shadow:0 0 30px rgba(0,229,255,0.2);}
+    .logo h1{font-family:'Space Mono',monospace;font-size:22px;letter-spacing:-0.5px;}
+    .logo p{font-size:13px;color:var(--muted);margin-top:4px;}
+    .form-group{margin-bottom:18px;}
+    label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+    input[type="text"],input[type="email"],input[type="password"],input[type="number"],textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:'Space Mono',monospace;font-size:14px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+    textarea{resize:vertical;min-height:100px;font-size:13px;line-height:1.7;}
+    input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,255,0.1);}
+    .btn{width:100%;padding:13px;border:none;border-radius:10px;font-family:'Sora',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px;}
+    .btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;box-shadow:0 4px 20px rgba(0,229,255,0.2);}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,229,255,0.3);}
+    .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:10px;}
+    .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+    .btn-danger{background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.3);}
+    .btn-danger:hover{background:rgba(239,68,68,0.2);}
+    .btn-sm{width:auto;padding:6px 14px;font-size:12px;border-radius:8px;margin-top:0;}
+    .btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important;}
+    .switch-link{text-align:center;margin-top:20px;font-size:13px;color:var(--muted);}
+    .switch-link span{color:var(--accent);cursor:pointer;font-weight:600;}
+    .switch-link span:hover{text-decoration:underline;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 24px;font-size:13px;font-weight:600;z-index:9999;transition:transform 0.3s ease,opacity 0.3s ease;opacity:0;white-space:nowrap;}
+    #toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+    #toast.success{border-color:var(--success);color:var(--success);}
+    #toast.error{border-color:var(--danger);color:var(--danger);}
+    #toast.info{border-color:var(--accent);color:var(--accent);}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:16px;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.6);animation:fadeIn 0.25s ease;}
+    .modal-title{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;margin-bottom:24px;}
+    .modal-actions{display:flex;gap:10px;margin-top:20px;}
+    .modal-actions .btn{margin-top:0;}
+    #adminScreen{justify-content:flex-start;padding:0;}
+    .admin-layout{display:flex;width:100%;min-height:100vh;}
+    .sidebar{width:230px;background:var(--surface);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;flex-shrink:0;}
+    .sidebar-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
+    .sidebar-logo .icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+    .sidebar-logo span{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;margin-bottom:4px;border:1px solid transparent;}
+    .nav-item:hover{background:var(--surface2);color:var(--text);}
+    .nav-item.active{background:rgba(0,229,255,0.08);color:var(--accent);border-color:rgba(0,229,255,0.15);}
+    .sidebar-bottom{margin-top:auto;}
+    .admin-content{flex:1;padding:28px;overflow-y:auto;}
+    .page-title{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+    .page-title::before{content:'';display:inline-block;width:4px;height:20px;background:linear-gradient(var(--accent2),var(--accent));border-radius:2px;}
+    .tab-content{display:none;}
+    .tab-content.active{display:block;}
+    .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+    .search-input{flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px 10px 40px;color:var(--text);font-family:'Sora',sans-serif;font-size:13px;outline:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%236b6b8a' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:14px center;transition:border-color 0.2s;}
+    .search-input:focus{border-color:var(--accent);}
+    .tool-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid;font-family:'Sora',sans-serif;transition:all 0.2s;white-space:nowrap;}
+    .tb-cyan{background:rgba(0,229,255,0.08);color:var(--accent);border-color:rgba(0,229,255,0.2);}
+    .tb-cyan:hover{background:rgba(0,229,255,0.15);}
+    .tb-green{background:rgba(16,185,129,0.08);color:var(--success);border-color:rgba(16,185,129,0.2);}
+    .tb-green:hover{background:rgba(16,185,129,0.15);}
+    .tb-red{background:rgba(239,68,68,0.08);color:var(--danger);border-color:rgba(239,68,68,0.2);}
+    .tb-red:hover{background:rgba(239,68,68,0.15);}
+    .contacts-count{font-size:12px;color:var(--muted);margin-bottom:14px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:inline-block;}
+    .contacts-count strong{color:var(--accent);}
+    .contacts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;}
+    .contact-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;transition:border-color 0.2s,box-shadow 0.2s;}
+    .contact-card:hover{border-color:rgba(0,229,255,0.25);box-shadow:0 4px 20px rgba(0,229,255,0.04);}
+    .contact-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+    .contact-name{font-size:13px;font-weight:700;color:var(--text);word-break:break-word;line-height:1.4;}
+    .card-actions{display:flex;gap:5px;flex-shrink:0;}
+    .icon-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;transition:all 0.2s;}
+    .icon-btn.edit:hover{border-color:var(--accent);background:rgba(0,229,255,0.1);}
+    .icon-btn.del:hover{border-color:var(--danger);background:rgba(239,68,68,0.1);}
+    .phone-chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);margin:2px;cursor:pointer;transition:all 0.2s;}
+    .phone-chip:hover{background:rgba(0,229,255,0.1);border-color:var(--accent);}
+    .upload-zone{border:2px dashed var(--border);border-radius:16px;padding:48px 24px;text-align:center;cursor:pointer;transition:all 0.3s;background:var(--surface);}
+    .upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(0,229,255,0.03);}
+    .upload-icon{font-size:40px;margin-bottom:12px;}
+    .upload-zone h3{font-size:15px;font-weight:600;margin-bottom:6px;}
+    .upload-zone p{font-size:13px;color:var(--muted);}
+    #vcfFileInput{display:none;}
+    .settings-section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
+    .settings-section h3{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:14px;font-family:'Space Mono',monospace;letter-spacing:0.5px;}
+    .passcode-display{font-family:'Space Mono',monospace;font-size:28px;letter-spacing:8px;color:var(--accent);margin:12px 0;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;}
+    #userScreen{justify-content:flex-start;}
+    .user-header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;width:100%;}
+    .user-header-logo{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+    .user-body{padding:24px;width:100%;max-width:1100px;margin:0 auto;}
+    .stats-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+    .stat-pill{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-size:12px;font-weight:600;color:var(--muted);}
+    .stat-pill strong{color:var(--accent);}
+    .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;}
+    .badge-user{background:rgba(0,229,255,0.1);color:var(--accent);border:1px solid rgba(0,229,255,0.2);}
+    .highlight{background:rgba(0,229,255,0.25);border-radius:3px;padding:0 2px;color:var(--text);}
+    .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin:40px auto;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+    .empty-icon{font-size:48px;margin-bottom:12px;opacity:0.4;}
+    @media(max-width:768px){.admin-layout{flex-direction:column;}.sidebar{width:100%;flex-direction:row;flex-wrap:wrap;gap:6px;padding:12px;}.sidebar-logo,.sidebar-bottom{display:none;}.admin-content{padding:14px;}.card{padding:24px 16px;}}
   </style>
 </head>
 <body>
-
 <div class="glow-orb glow-orb-1"></div>
 <div class="glow-orb glow-orb-2"></div>
 <div id="toast"></div>
 
-<!-- ===== LANDING SCREEN ===== -->
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Contact</div>
+    <input type="hidden" id="editContactId" />
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="editName" placeholder="Contact name" />
+    </div>
+    <div class="form-group">
+      <label>Phone Numbers (one per line)</label>
+      <textarea id="editPhones" placeholder="+8801XXXXXXXXX"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveEditContact()">💾 Save Changes</button>
+      <button class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title">➕ Add New Contact</div>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="addName" placeholder="Contact name" />
+    </div>
+    <div class="form-group">
+      <label>Phone Numbers (one per line)</label>
+      <textarea id="addPhones" placeholder="+8801XXXXXXXXX"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveNewContact()">➕ Add Contact</button>
+      <button class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- LANDING -->
 <div id="landingScreen" class="screen active">
   <div class="card">
     <div class="logo">
@@ -530,7 +170,7 @@
   </div>
 </div>
 
-<!-- ===== ADMIN LOGIN SCREEN ===== -->
+<!-- ADMIN LOGIN -->
 <div id="adminLoginScreen" class="screen">
   <div class="card">
     <div class="logo">
@@ -551,7 +191,7 @@
   </div>
 </div>
 
-<!-- ===== USER LOGIN SCREEN ===== -->
+<!-- USER LOGIN -->
 <div id="userLoginScreen" class="screen">
   <div class="card">
     <div class="logo">
@@ -568,7 +208,7 @@
   </div>
 </div>
 
-<!-- ===== ADMIN DASHBOARD ===== -->
+<!-- ADMIN DASHBOARD -->
 <div id="adminScreen" class="screen">
   <div class="admin-layout">
     <div class="sidebar">
@@ -576,71 +216,58 @@
         <div class="icon">📇</div>
         <span>Contact Vault</span>
       </div>
-      <div class="nav-item active" id="nav-upload" onclick="switchTab('upload')">
-        <span class="nav-icon">📤</span> Upload VCF
-      </div>
-      <div class="nav-item" id="nav-contacts" onclick="switchTab('contacts')">
-        <span class="nav-icon">👥</span> Contacts
-      </div>
-      <div class="nav-item" id="nav-settings" onclick="switchTab('settings')">
-        <span class="nav-icon">⚙️</span> Settings
-      </div>
+      <div class="nav-item active" id="nav-upload" onclick="switchTab('upload')"><span>📤</span> Upload VCF</div>
+      <div class="nav-item" id="nav-contacts" onclick="switchTab('contacts')"><span>👥</span> Contacts</div>
+      <div class="nav-item" id="nav-settings" onclick="switchTab('settings')"><span>⚙️</span> Settings</div>
       <div class="sidebar-bottom">
-        <div class="nav-item" onclick="adminLogout()">
-          <span class="nav-icon">🚪</span> Logout
-        </div>
+        <div class="nav-item" onclick="adminLogout()"><span>🚪</span> Logout</div>
       </div>
     </div>
-
     <div class="admin-content">
 
       <!-- UPLOAD TAB -->
       <div id="tab-upload" class="tab-content active">
         <div class="page-title">Upload VCF File</div>
-
-        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('vcfFileInput').click()"
-          ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('vcfFileInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
           <div class="upload-icon">📁</div>
           <h3>Click or drag & drop your .vcf file</h3>
-          <p>Contacts will be parsed and saved to Firebase</p>
+          <p>Contacts will be parsed and uploaded to Firebase</p>
         </div>
         <input type="file" id="vcfFileInput" accept=".vcf" onchange="handleVcfFile(event)" />
-
-        <div id="parseResult" style="margin-top: 20px;"></div>
-
-        <div style="margin-top: 20px;" id="uploadPreview"></div>
+        <div id="parseResult" style="margin-top:16px;"></div>
+        <div id="uploadPreview" style="margin-top:12px;"></div>
       </div>
 
       <!-- CONTACTS TAB -->
       <div id="tab-contacts" class="tab-content">
-        <div class="page-title">All Contacts</div>
-        <div class="contacts-header">
-          <div class="contacts-count" id="adminContactCount">Loading...</div>
-          <button class="copy-all-btn" onclick="copyAllNumbers()">📋 Copy All Numbers</button>
+        <div class="page-title">Manage Contacts</div>
+        <div class="toolbar">
+          <input class="search-input" type="text" id="adminSearch" placeholder="Search by name or number..." oninput="renderAdminContacts()" />
+          <button class="tool-btn tb-green" onclick="openAddModal()">➕ Add Contact</button>
+          <button class="tool-btn tb-cyan" onclick="copyAllNumbers()">📋 Copy All Numbers</button>
+          <button class="tool-btn tb-red" onclick="deleteAllContacts()">🗑️ Delete All</button>
         </div>
-        <input class="search-bar" type="text" placeholder="Search contacts..." id="adminSearch" oninput="renderAdminContacts()" style="margin-bottom:16px;" />
-        <div class="contacts-grid" id="adminContactsGrid"></div>
+        <div class="contacts-count" id="adminContactCount">Loading...</div>
+        <div class="contacts-grid" id="adminContactsGrid"><div class="spinner"></div></div>
       </div>
 
       <!-- SETTINGS TAB -->
       <div id="tab-settings" class="tab-content">
         <div class="page-title">Settings</div>
-
         <div class="settings-section">
           <h3>USER PASSCODE</h3>
-          <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">Users enter this passcode to access contacts.</p>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Users use this passcode to access the contact list.</p>
           <div class="passcode-display" id="currentPasscodeDisplay">••••</div>
           <div class="form-group" style="margin-top:16px;">
-            <label>New Passcode</label>
-            <input type="text" id="newPasscodeInput" placeholder="Enter new passcode" />
+            <label>Set New Passcode</label>
+            <input type="text" id="newPasscodeInput" placeholder="Type new passcode..." />
           </div>
-          <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="updatePasscode()">Update Passcode</button>
+          <button class="btn btn-primary" style="width:auto;padding:10px 24px;" onclick="updatePasscode()">🔒 Update Passcode</button>
         </div>
-
         <div class="settings-section">
           <h3>DANGER ZONE</h3>
-          <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">This will permanently delete all contacts from Firebase.</p>
-          <button class="btn btn-danger" style="width:auto;padding:10px 20px;" onclick="deleteAllContacts()">🗑️ Delete All Contacts</button>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Permanently deletes all contacts from Firebase.</p>
+          <button class="btn btn-danger" style="width:auto;padding:10px 24px;margin-top:0;" onclick="deleteAllContacts()">🗑️ Delete All Contacts</button>
         </div>
       </div>
 
@@ -648,34 +275,29 @@
   </div>
 </div>
 
-<!-- ===== USER SCREEN ===== -->
+<!-- USER SCREEN -->
 <div id="userScreen" class="screen">
   <div class="user-header">
-    <div class="user-header-logo">
-      <span>📇</span> Contact Vault <span class="badge badge-user">USER</span>
-    </div>
-    <button class="btn btn-secondary btn-sm" onclick="showScreen('landingScreen')">Logout</button>
+    <div class="user-header-logo">📇 Contact Vault <span class="badge badge-user">USER</span></div>
+    <button class="btn btn-secondary btn-sm" onclick="userLogout()">Logout</button>
   </div>
   <div class="user-body">
     <div class="stats-bar">
-      <div class="stat-pill">Total Contacts: <strong id="userTotalContacts">0</strong></div>
+      <div class="stat-pill">Contacts: <strong id="userTotalContacts">0</strong></div>
       <div class="stat-pill">Total Numbers: <strong id="userTotalNumbers">0</strong></div>
     </div>
-    <input class="search-bar" type="text" placeholder="Search by name or number..." id="userSearch" oninput="renderUserContacts()" />
-    <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-      <button class="copy-all-btn" onclick="copyAllNumbers()">📋 Copy All Numbers</button>
+    <div class="toolbar">
+      <input class="search-input" type="text" id="userSearch" placeholder="Search by name or number..." oninput="renderUserContacts()" />
+      <button class="tool-btn tb-cyan" onclick="copyAllNumbers()">📋 Copy All Numbers</button>
     </div>
     <div class="contacts-grid" id="userContactsGrid"></div>
   </div>
 </div>
 
-<!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
-    from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-  import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc, writeBatch }
-    from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+  import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc, writeBatch, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBs8_Gac2NA3nKNIy_q8wt3OWOHtta9NMM",
@@ -689,312 +311,227 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-
-  // expose to global
   window._auth = auth;
   window._db = db;
-  window._fbFns = {
-    signInWithEmailAndPassword, signOut, onAuthStateChanged,
-    collection, doc, setDoc, getDocs, getDoc, deleteDoc, writeBatch
-  };
-
-  onAuthStateChanged(auth, (user) => {
-    if (user && window.location.hash === '#admin') {
-      loadAdminDashboard();
-    }
-  });
+  window._fbFns = { signInWithEmailAndPassword, signOut, onAuthStateChanged, collection, doc, setDoc, getDocs, getDoc, deleteDoc, writeBatch, updateDoc };
+  onAuthStateChanged(auth, (user) => { if (user && window.location.hash === '#admin') loadAdminDashboard(); });
 </script>
 
 <script>
-// ====================== UTILS ======================
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function showToast(msg,type='info'){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;clearTimeout(window._tt);window._tt=setTimeout(()=>{t.className='';},3000);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function highlightText(text,query){if(!query)return escHtml(text);const safe=escHtml(text);const re=new RegExp('('+query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');return safe.replace(re,'<span class="highlight">$1</span>');}
+function switchTab(tab){document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');document.getElementById('nav-'+tab).classList.add('active');if(tab==='contacts')loadAdminContacts();if(tab==='settings')loadCurrentPasscode();}
+function dragOver(e){e.preventDefault();document.getElementById('uploadZone').classList.add('dragover');}
+function dragLeave(){document.getElementById('uploadZone').classList.remove('dragover');}
+function dropFile(e){e.preventDefault();dragLeave();const f=e.dataTransfer.files[0];if(f)processVcfFile(f);}
+function handleVcfFile(e){const f=e.target.files[0];if(f)processVcfFile(f);}
 
-function showToast(msg, type = 'info') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `show ${type}`;
-  setTimeout(() => { t.className = ''; }, 3000);
-}
-
-function switchTab(tab) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-  document.getElementById('nav-' + tab).classList.add('active');
-  if (tab === 'contacts') loadAdminContacts();
-  if (tab === 'settings') loadCurrentPasscode();
-}
-
-// Drag/drop
-function dragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('dragover'); }
-function dragLeave() { document.getElementById('uploadZone').classList.remove('dragover'); }
-function dropFile(e) {
-  e.preventDefault();
-  dragLeave();
-  const file = e.dataTransfer.files[0];
-  if (file) processVcfFile(file);
-}
-function handleVcfFile(e) {
-  const file = e.target.files[0];
-  if (file) processVcfFile(file);
-}
-
-// ====================== VCF PARSER ======================
-function parseVCF(text) {
-  const contacts = [];
-  const vcards = text.split(/END:VCARD/i).filter(v => v.trim());
-
-  for (const vcard of vcards) {
-    const nameMatch = vcard.match(/FN[^:]*:(.+)/i) || vcard.match(/N[^:]*:(.+)/i);
-    let name = nameMatch ? nameMatch[1].trim().replace(/;/g, ' ').trim() : 'Unknown';
-    name = name.replace(/\r/g, '').trim();
-
-    const phoneMatches = [...vcard.matchAll(/TEL[^:]*:(.+)/gi)];
-    const phones = phoneMatches.map(m =>
-      m[1].trim().replace(/\r/g, '').replace(/\s+/g, '').trim()
-    ).filter(p => p.length > 3);
-
-    if (phones.length > 0) {
-      contacts.push({ name, phones });
-    }
+function parseVCF(text){
+  const contacts=[];
+  const vcards=text.split(/END:VCARD/i).filter(v=>v.trim());
+  for(const vcard of vcards){
+    const nameMatch=vcard.match(/FN[^:]*:(.+)/i)||vcard.match(/N[^:]*:(.+)/i);
+    let name=nameMatch?nameMatch[1].trim().replace(/;+/g,' ').trim():'Unknown';
+    name=name.replace(/\r/g,'').trim();
+    const phoneMatches=[...vcard.matchAll(/TEL[^:]*:(.+)/gi)];
+    const phones=phoneMatches.map(m=>m[1].trim().replace(/\r/g,'').replace(/\s+/g,'').trim()).filter(p=>p.length>3);
+    if(phones.length>0)contacts.push({name,phones});
   }
   return contacts;
 }
 
-async function processVcfFile(file) {
-  if (!file.name.endsWith('.vcf') && !file.name.endsWith('.VCF')) {
-    showToast('Please select a valid .vcf file!', 'error'); return;
-  }
-  const text = await file.text();
-  const contacts = parseVCF(text);
-
-  const preview = document.getElementById('uploadPreview');
-  const result = document.getElementById('parseResult');
-
-  result.innerHTML = `<div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);border-radius:12px;padding:16px;font-size:13px;color:var(--accent);">
-    ✅ Parsed <strong>${contacts.length} contacts</strong> with phone numbers from <strong>${file.name}</strong>
-  </div>`;
-
-  preview.innerHTML = `
-    <button class="btn btn-primary" style="width:auto;padding:10px 24px;" onclick="uploadToFirebase()">
-      ☁️ Upload ${contacts.length} Contacts to Firebase
-    </button>
-  `;
-
-  window._parsedContacts = contacts;
+async function processVcfFile(file){
+  if(!file.name.toLowerCase().endsWith('.vcf')){showToast('Please select a .vcf file!','error');return;}
+  const text=await file.text();
+  const contacts=parseVCF(text);
+  if(!contacts.length){showToast('No contacts with phone numbers found!','error');return;}
+  document.getElementById('parseResult').innerHTML='<div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);border-radius:12px;padding:14px;font-size:13px;color:var(--accent);">✅ Found <strong>'+contacts.length+' contacts</strong> with phone numbers in <strong>'+escHtml(file.name)+'</strong></div>';
+  document.getElementById('uploadPreview').innerHTML='<button class="btn btn-primary" style="width:auto;padding:10px 24px;" onclick="uploadToFirebase()">☁️ Upload '+contacts.length+' Contacts to Firebase</button>';
+  window._parsedContacts=contacts;
 }
 
-// ====================== FIREBASE OPERATIONS ======================
-async function uploadToFirebase() {
-  if (!window._parsedContacts || window._parsedContacts.length === 0) {
-    showToast('No contacts to upload!', 'error'); return;
-  }
-
-  const { writeBatch, collection, doc } = window._fbFns;
-  const db = window._db;
-
-  showToast('Uploading...', 'info');
-
-  try {
-    const batch = writeBatch(db);
-    window._parsedContacts.forEach((contact, i) => {
-      const ref = doc(collection(db, 'contacts'), `contact_${Date.now()}_${i}`);
-      batch.set(ref, { name: contact.name, phones: contact.phones, createdAt: Date.now() });
-    });
-    await batch.commit();
-    showToast(`✅ ${window._parsedContacts.length} contacts uploaded!`, 'success');
-    document.getElementById('uploadPreview').innerHTML = '';
-    document.getElementById('parseResult').innerHTML = '';
-    document.getElementById('vcfFileInput').value = '';
-    window._parsedContacts = null;
-  } catch (err) {
-    showToast('Upload failed: ' + err.message, 'error');
-  }
-}
-
-let _allContacts = [];
-
-async function loadAdminContacts() {
-  const { getDocs, collection } = window._fbFns;
-  const db = window._db;
-  const grid = document.getElementById('adminContactsGrid');
-  const count = document.getElementById('adminContactCount');
-  grid.innerHTML = '<div class="spinner"></div>';
-
-  try {
-    const snap = await getDocs(collection(db, 'contacts'));
-    _allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    count.innerHTML = `<strong>${_allContacts.length}</strong> contacts found`;
-    renderAdminContacts();
-  } catch (err) {
-    grid.innerHTML = `<div class="empty-state"><p>Error: ${err.message}</p></div>`;
-  }
-}
-
-function renderAdminContacts() {
-  const q = document.getElementById('adminSearch')?.value.toLowerCase() || '';
-  const filtered = _allContacts.filter(c =>
-    c.name.toLowerCase().includes(q) || c.phones?.some(p => p.includes(q))
-  );
-  const grid = document.getElementById('adminContactsGrid');
-  if (filtered.length === 0) {
-    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>No contacts found</p></div>'; return;
-  }
-  grid.innerHTML = filtered.map(c => `
-    <div class="contact-card">
-      <div class="contact-name">👤 ${c.name}</div>
-      ${c.phones?.map(p => `<span class="phone-chip" onclick="copyPhone('${p}')">📞 ${p}</span>`).join('') || ''}
-    </div>
-  `).join('');
-}
-
-async function loadAdminDashboard() {
-  showScreen('adminScreen');
-  window.location.hash = '#admin';
-}
-
-async function loadCurrentPasscode() {
-  const { getDoc, doc } = window._fbFns;
-  const db = window._db;
-  try {
-    const snap = await getDoc(doc(db, 'settings', 'passcode'));
-    const display = document.getElementById('currentPasscodeDisplay');
-    if (snap.exists()) {
-      display.textContent = snap.data().code;
-    } else {
-      display.textContent = 'Not set';
+async function uploadToFirebase(){
+  if(!window._parsedContacts?.length){showToast('No contacts to upload!','error');return;}
+  const {writeBatch,collection,doc}=window._fbFns;const db=window._db;
+  showToast('Uploading...','info');
+  try{
+    for(let i=0;i<window._parsedContacts.length;i+=490){
+      const batch=writeBatch(db);
+      window._parsedContacts.slice(i,i+490).forEach(contact=>{
+        const ref=doc(collection(db,'contacts'),'c_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
+        batch.set(ref,{name:contact.name,phones:contact.phones,createdAt:Date.now()});
+      });
+      await batch.commit();
     }
-  } catch {}
+    showToast('✅ '+window._parsedContacts.length+' contacts uploaded!','success');
+    document.getElementById('uploadPreview').innerHTML='';
+    document.getElementById('parseResult').innerHTML='';
+    document.getElementById('vcfFileInput').value='';
+    window._parsedContacts=null;
+  }catch(err){showToast('Upload failed: '+err.message,'error');}
 }
 
-async function updatePasscode() {
-  const code = document.getElementById('newPasscodeInput').value.trim();
-  if (!code) { showToast('Please enter a passcode!', 'error'); return; }
-  const { setDoc, doc } = window._fbFns;
-  const db = window._db;
-  try {
-    await setDoc(doc(db, 'settings', 'passcode'), { code });
-    document.getElementById('currentPasscodeDisplay').textContent = code;
-    document.getElementById('newPasscodeInput').value = '';
-    showToast('✅ Passcode updated!', 'success');
-  } catch (err) {
-    showToast('Failed: ' + err.message, 'error');
-  }
+let _allContacts=[];
+
+async function loadAdminContacts(){
+  const {getDocs,collection}=window._fbFns;const db=window._db;
+  document.getElementById('adminContactsGrid').innerHTML='<div class="spinner"></div>';
+  document.getElementById('adminContactCount').textContent='Loading...';
+  try{
+    const snap=await getDocs(collection(db,'contacts'));
+    _allContacts=snap.docs.map(d=>({id:d.id,...d.data()}));
+    _allContacts.sort((a,b)=>a.name.localeCompare(b.name));
+    updateAdminCount();renderAdminContacts();
+  }catch(err){document.getElementById('adminContactsGrid').innerHTML='<div class="empty-state"><p style="color:var(--danger)">Error: '+err.message+'</p></div>';}
 }
 
-async function deleteAllContacts() {
-  if (!confirm('Are you sure? This will delete ALL contacts permanently!')) return;
-  const { getDocs, deleteDoc, collection, doc } = window._fbFns;
-  const db = window._db;
-  try {
-    const snap = await getDocs(collection(db, 'contacts'));
-    const promises = snap.docs.map(d => deleteDoc(doc(db, 'contacts', d.id)));
-    await Promise.all(promises);
-    _allContacts = [];
-    renderAdminContacts();
-    showToast('🗑️ All contacts deleted!', 'success');
-  } catch (err) {
-    showToast('Failed: ' + err.message, 'error');
-  }
+function updateAdminCount(){
+  const nums=_allContacts.reduce((s,c)=>s+(c.phones?.length||0),0);
+  document.getElementById('adminContactCount').innerHTML='<strong>'+_allContacts.length+'</strong> contacts &nbsp;·&nbsp; <strong>'+nums+'</strong> phone numbers';
 }
 
-// ====================== AUTH ======================
-async function adminLogin() {
-  const email = document.getElementById('adminEmail').value.trim();
-  const pass = document.getElementById('adminPass').value;
-  if (!email || !pass) { showToast('Please fill all fields!', 'error'); return; }
-
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true; btn.textContent = 'Signing in...';
-
-  try {
-    await window._fbFns.signInWithEmailAndPassword(window._auth, email, pass);
-    showToast('✅ Logged in!', 'success');
-    loadAdminDashboard();
-  } catch (err) {
-    showToast('Login failed: ' + err.message, 'error');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Login →';
-  }
+function renderAdminContacts(){
+  const q=(document.getElementById('adminSearch')?.value||'').toLowerCase().trim();
+  const filtered=q?_allContacts.filter(c=>c.name.toLowerCase().includes(q)||c.phones?.some(p=>p.includes(q))):_allContacts;
+  const grid=document.getElementById('adminContactsGrid');
+  if(!filtered.length){grid.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div><p>No contacts found'+(q?' for "<b>'+escHtml(q)+'</b>"':'')+'</p></div>';return;}
+  grid.innerHTML=filtered.map(c=>'<div class="contact-card" id="card-'+c.id+'"><div class="contact-card-header"><div class="contact-name">👤 '+highlightText(c.name,q)+'</div><div class="card-actions"><div class="icon-btn edit" title="Edit" onclick="openEditModal(\''+c.id+'\')">✏️</div><div class="icon-btn del" title="Delete" onclick="deleteContact(\''+c.id+'\',\''+c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')+'\')">🗑️</div></div></div><div>'+(c.phones?.length?c.phones.map(p=>'<span class="phone-chip" onclick="copyPhone(\''+escHtml(p)+'\')">📞 '+highlightText(p,q)+'</span>').join(''):'<span style="color:var(--muted);font-size:12px;">No numbers</span>')+'</div></div>').join('');
 }
 
-async function adminLogout() {
-  await window._fbFns.signOut(window._auth);
-  window.location.hash = '';
-  showScreen('landingScreen');
-  showToast('Logged out', 'info');
+function openAddModal(){document.getElementById('addName').value='';document.getElementById('addPhones').value='';openModal('addModal');}
+
+async function saveNewContact(){
+  const name=document.getElementById('addName').value.trim();
+  const phones=document.getElementById('addPhones').value.split('\n').map(p=>p.trim()).filter(p=>p.length>2);
+  if(!name){showToast('Name is required!','error');return;}
+  if(!phones.length){showToast('At least one phone number required!','error');return;}
+  const {doc,setDoc,collection}=window._fbFns;const db=window._db;
+  try{
+    const id='c_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    await setDoc(doc(collection(db,'contacts'),id),{name,phones,createdAt:Date.now()});
+    _allContacts.push({id,name,phones,createdAt:Date.now()});
+    _allContacts.sort((a,b)=>a.name.localeCompare(b.name));
+    updateAdminCount();renderAdminContacts();closeModal('addModal');
+    showToast('✅ Contact added!','success');
+  }catch(err){showToast('Failed: '+err.message,'error');}
 }
 
-async function userLogin() {
-  const input = document.getElementById('userPasscode').value.trim();
-  if (!input) { showToast('Enter passcode!', 'error'); return; }
-
-  const { getDoc, doc, getDocs, collection } = window._fbFns;
-  const db = window._db;
-
-  try {
-    const snap = await getDoc(doc(db, 'settings', 'passcode'));
-    if (!snap.exists()) { showToast('No passcode set by admin yet!', 'error'); return; }
-    const correctCode = snap.data().code;
-    if (input !== correctCode) { showToast('Wrong passcode!', 'error'); return; }
-
-    // Load contacts
-    const contactsSnap = await getDocs(collection(db, 'contacts'));
-    _allContacts = contactsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    // Stats
-    const totalNumbers = _allContacts.reduce((s, c) => s + (c.phones?.length || 0), 0);
-    document.getElementById('userTotalContacts').textContent = _allContacts.length;
-    document.getElementById('userTotalNumbers').textContent = totalNumbers;
-
-    showToast('✅ Access granted!', 'success');
-    showScreen('userScreen');
-    renderUserContacts();
-  } catch (err) {
-    showToast('Error: ' + err.message, 'error');
-  }
+function openEditModal(id){
+  const c=_allContacts.find(x=>x.id===id);if(!c)return;
+  document.getElementById('editContactId').value=id;
+  document.getElementById('editName').value=c.name;
+  document.getElementById('editPhones').value=c.phones?.join('\n')||'';
+  openModal('editModal');
 }
 
-function renderUserContacts() {
-  const q = document.getElementById('userSearch')?.value.toLowerCase() || '';
-  const filtered = _allContacts.filter(c =>
-    c.name.toLowerCase().includes(q) || c.phones?.some(p => p.includes(q))
-  );
-  const grid = document.getElementById('userContactsGrid');
-  if (filtered.length === 0) {
-    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>No contacts found</p></div>'; return;
-  }
-  grid.innerHTML = filtered.map(c => `
-    <div class="contact-card">
-      <div class="contact-name">👤 ${c.name}</div>
-      ${c.phones?.map(p => `<span class="phone-chip" onclick="copyPhone('${p}')">📞 ${p}</span>`).join('') || ''}
-    </div>
-  `).join('');
+async function saveEditContact(){
+  const id=document.getElementById('editContactId').value;
+  const name=document.getElementById('editName').value.trim();
+  const phones=document.getElementById('editPhones').value.split('\n').map(p=>p.trim()).filter(p=>p.length>2);
+  if(!name){showToast('Name is required!','error');return;}
+  const {doc,updateDoc}=window._fbFns;const db=window._db;
+  try{
+    await updateDoc(doc(db,'contacts',id),{name,phones});
+    const idx=_allContacts.findIndex(c=>c.id===id);
+    if(idx!==-1)_allContacts[idx]={..._allContacts[idx],name,phones};
+    _allContacts.sort((a,b)=>a.name.localeCompare(b.name));
+    updateAdminCount();renderAdminContacts();closeModal('editModal');
+    showToast('✅ Contact updated!','success');
+  }catch(err){showToast('Update failed: '+err.message,'error');}
 }
 
-function copyPhone(number) {
-  navigator.clipboard.writeText(number).then(() => showToast(`📋 Copied: ${number}`, 'success'));
+async function deleteContact(id,name){
+  if(!confirm('Delete "'+name+'"?\nThis cannot be undone.'))return;
+  const {deleteDoc,doc}=window._fbFns;
+  try{
+    await deleteDoc(doc(window._db,'contacts',id));
+    _allContacts=_allContacts.filter(c=>c.id!==id);
+    updateAdminCount();renderAdminContacts();
+    showToast('🗑️ Contact deleted!','success');
+  }catch(err){showToast('Delete failed: '+err.message,'error');}
 }
 
-function copyAllNumbers() {
-  const allNums = _allContacts.flatMap(c => c.phones || []);
-  if (allNums.length === 0) { showToast('No numbers to copy!', 'error'); return; }
-  navigator.clipboard.writeText(allNums.join('\n')).then(() =>
-    showToast(`📋 Copied ${allNums.length} numbers!`, 'success')
-  );
+async function deleteAllContacts(){
+  const total=_allContacts.length;
+  if(!total){showToast('No contacts to delete!','error');return;}
+  if(!confirm('Delete ALL '+total+' contacts permanently?\nThis cannot be undone!'))return;
+  const {getDocs,deleteDoc,collection,doc}=window._fbFns;const db=window._db;
+  try{
+    showToast('Deleting all...','info');
+    const snap=await getDocs(collection(db,'contacts'));
+    await Promise.all(snap.docs.map(d=>deleteDoc(doc(db,'contacts',d.id))));
+    _allContacts=[];updateAdminCount();renderAdminContacts();
+    showToast('🗑️ All contacts deleted!','success');
+  }catch(err){showToast('Failed: '+err.message,'error');}
 }
 
-// Enter key support
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    if (document.getElementById('adminLoginScreen').classList.contains('active')) adminLogin();
-    if (document.getElementById('userLoginScreen').classList.contains('active')) userLogin();
-  }
+async function loadCurrentPasscode(){
+  const {getDoc,doc}=window._fbFns;
+  try{const snap=await getDoc(doc(window._db,'settings','passcode'));document.getElementById('currentPasscodeDisplay').textContent=snap.exists()?snap.data().code:'Not set';}catch{}
+}
+
+async function updatePasscode(){
+  const code=document.getElementById('newPasscodeInput').value.trim();
+  if(!code){showToast('Enter a passcode!','error');return;}
+  const {setDoc,doc}=window._fbFns;
+  try{await setDoc(doc(window._db,'settings','passcode'),{code});document.getElementById('currentPasscodeDisplay').textContent=code;document.getElementById('newPasscodeInput').value='';showToast('✅ Passcode updated!','success');}catch(err){showToast('Failed: '+err.message,'error');}
+}
+
+async function loadAdminDashboard(){showScreen('adminScreen');window.location.hash='#admin';}
+
+async function adminLogin(){
+  const email=document.getElementById('adminEmail').value.trim();
+  const pass=document.getElementById('adminPass').value;
+  if(!email||!pass){showToast('Please fill all fields!','error');return;}
+  const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='Signing in...';
+  try{await window._fbFns.signInWithEmailAndPassword(window._auth,email,pass);showToast('✅ Logged in!','success');loadAdminDashboard();}
+  catch(err){showToast('Login failed: '+err.message,'error');}
+  finally{btn.disabled=false;btn.textContent='Login →';}
+}
+
+async function adminLogout(){await window._fbFns.signOut(window._auth);window.location.hash='';_allContacts=[];showScreen('landingScreen');showToast('Logged out','info');}
+
+async function userLogin(){
+  const input=document.getElementById('userPasscode').value.trim();
+  if(!input){showToast('Enter passcode!','error');return;}
+  const {getDoc,doc,getDocs,collection}=window._fbFns;const db=window._db;
+  try{
+    const snap=await getDoc(doc(db,'settings','passcode'));
+    if(!snap.exists()){showToast('No passcode set by admin yet!','error');return;}
+    if(input!==snap.data().code){showToast('Wrong passcode!','error');return;}
+    showToast('Loading contacts...','info');
+    const cSnap=await getDocs(collection(db,'contacts'));
+    _allContacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+    _allContacts.sort((a,b)=>a.name.localeCompare(b.name));
+    const totalNumbers=_allContacts.reduce((s,c)=>s+(c.phones?.length||0),0);
+    document.getElementById('userTotalContacts').textContent=_allContacts.length;
+    document.getElementById('userTotalNumbers').textContent=totalNumbers;
+    showToast('✅ Access granted!','success');showScreen('userScreen');renderUserContacts();
+  }catch(err){showToast('Error: '+err.message,'error');}
+}
+
+function userLogout(){_allContacts=[];document.getElementById('userPasscode').value='';document.getElementById('userSearch').value='';showScreen('landingScreen');}
+
+function renderUserContacts(){
+  const q=(document.getElementById('userSearch')?.value||'').toLowerCase().trim();
+  const filtered=q?_allContacts.filter(c=>c.name.toLowerCase().includes(q)||c.phones?.some(p=>p.includes(q))):_allContacts;
+  const grid=document.getElementById('userContactsGrid');
+  if(!filtered.length){grid.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No contacts found</p></div>';return;}
+  grid.innerHTML=filtered.map(c=>'<div class="contact-card"><div class="contact-card-header"><div class="contact-name">👤 '+highlightText(c.name,q)+'</div></div><div>'+(c.phones?.map(p=>'<span class="phone-chip" onclick="copyPhone(\''+escHtml(p)+'\')">📞 '+highlightText(p,q)+'</span>').join('')||'')+'</div></div>').join('');
+}
+
+function copyPhone(number){navigator.clipboard.writeText(number).then(()=>showToast('📋 Copied: '+number,'success'));}
+function copyAllNumbers(){const all=_allContacts.flatMap(c=>c.phones||[]);if(!all.length){showToast('No numbers to copy!','error');return;}navigator.clipboard.writeText(all.join('\n')).then(()=>showToast('📋 Copied '+all.length+' numbers!','success'));}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){if(document.getElementById('adminLoginScreen').classList.contains('active'))adminLogin();if(document.getElementById('userLoginScreen').classList.contains('active'))userLogin();}
+  if(e.key==='Escape'){document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));}
 });
 </script>
-
 </body>
 </html>
