@@ -1290,57 +1290,44 @@ async function mergeAllDuplicates(){
   finally{btn.disabled=false;btn.textContent='🔀 Merge All';}
 }
 
+// ===== ISP NAME NORMALIZER =====
+function normalizeISP(org){
+  if(!org||org==='?')return '?';
+  const o=org.toLowerCase();
+  if(o.includes('grameenphone')||o.includes('gp'))return 'Grameenphone (GP)';
+  if(o.includes('axiata')||o.includes('robi'))return 'Robi Axiata';
+  if(o.includes('airtel'))return 'Airtel Bangladesh';
+  if(o.includes('banglalink')||o.includes('vimpelcom'))return 'Banglalink';
+  if(o.includes('teletalk'))return 'Teletalk';
+  if(o.includes('btcl')||o.includes('bangladesh telegraph'))return 'BTCL';
+  if(o.includes('link3'))return 'Link3 Technologies';
+  if(o.includes('metronet'))return 'Metronet Bangladesh';
+  if(o.includes('dhaka fiber')||o.includes('dhakafiber'))return 'Dhaka Fiber Net';
+  if(o.includes('amberit')||o.includes('amber'))return 'Amber IT';
+  if(o.includes('bracnet'))return 'BRACNet';
+  if(o.includes('agni'))return 'Agni Systems';
+  if(o.includes('ranks'))return 'Ranks ITT';
+  if(o.includes('carnival'))return 'Carnival Internet';
+  // Strip AS number prefix like "AS1234 Company Name"
+  return org.replace(/^AS\d+\s*/,'').trim()||org;
+}
+
 // ===== ACTIVITY LOG =====
 async function logLoginActivity(passcodeLabel, passcodeCode, success, failReason=''){
   try{
     let ipInfo={ip:'Unknown',city:'Unknown',country:'Unknown',org:'Unknown'};
-
-    // Get IP (reliable)
     try{
-      const r=await fetch('https://api64.ipify.org?format=json',{signal:AbortSignal.timeout(4000)});
+      const r=await fetch('https://blue-fog-786d.csm-mohasin-com.workers.dev/',{signal:AbortSignal.timeout(6000)});
       const d=await r.json();
-      if(d.ip)ipInfo.ip=d.ip;
+      ipInfo={
+        ip:d.ip||'Unknown',
+        city:d.city||'?',
+        country:d.country==='BD'?'Bangladesh':(d.country||'?'),
+        org:normalizeISP(d.org||'?'),
+        latitude:d.latitude||'?',
+        longitude:d.longitude||'?'
+      };
     }catch(e){}
-
-    // Get location via browser Geolocation API
-    const geoResult = await new Promise(resolve=>{
-      if(!navigator.geolocation){resolve(null);return;}
-      navigator.geolocation.getCurrentPosition(
-        pos=>resolve(pos.coords),
-        ()=>resolve(null),
-        {timeout:8000,maximumAge:60000}
-      );
-    });
-
-    if(geoResult){
-      try{
-        // Reverse geocode lat/lng to city/country using nominatim (free, no key needed)
-        const r=await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${geoResult.latitude}&lon=${geoResult.longitude}&format=json`,
-          {signal:AbortSignal.timeout(5000),headers:{'Accept-Language':'en'}}
-        );
-        const d=await r.json();
-        const addr=d.address||{};
-        ipInfo.city=addr.city||addr.town||addr.village||addr.county||'?';
-        ipInfo.country=addr.country||'?';
-        ipInfo.org=`📍 GPS (±${Math.round(geoResult.accuracy)}m)`;
-      }catch(e){
-        ipInfo.city=`${geoResult.latitude.toFixed(4)}, ${geoResult.longitude.toFixed(4)}`;
-        ipInfo.country='GPS';
-        ipInfo.org='GPS Location';
-      }
-    } else {
-      // GPS denied — try IP-based as last resort
-      try{
-        const r=await fetch(`https://ipwho.is/${ipInfo.ip}`,{signal:AbortSignal.timeout(5000)});
-        const d=await r.json();
-        if(d.success){
-          ipInfo.city=d.city||'?';
-          ipInfo.country=d.country||'?';
-          ipInfo.org=d.connection?.isp||d.connection?.org||'?';
-        }
-      }catch(e){}
-    }
 
     // Device/browser info
     const ua=navigator.userAgent;
@@ -1363,6 +1350,7 @@ async function logLoginActivity(passcodeLabel, passcodeCode, success, failReason
       passcodeLabel,passcodeCode,
       success,failReason,
       ip:ipInfo.ip,city:ipInfo.city,country:ipInfo.country,isp:ipInfo.org,
+      latitude:ipInfo.latitude||'?',longitude:ipInfo.longitude||'?',
       device,browser,os,
       userAgent:ua.substring(0,200),
       screen:screen.width+'x'+screen.height,
@@ -1398,6 +1386,8 @@ async function loadActivityLog(){
           <div class="log-item"><div class="log-item-label">🌐 IP Address</div><div class="log-item-value">${escHtml(log.ip||'?')}</div></div>
           <div class="log-item"><div class="log-item-label">📍 Location</div><div class="log-item-value">${escHtml((log.city||'?')+', '+(log.country||'?'))}</div></div>
           <div class="log-item"><div class="log-item-label">🏢 ISP / Org</div><div class="log-item-value">${escHtml(log.isp||'?')}</div></div>
+          ${(log.latitude&&log.latitude!=='?')?`<div class="log-item"><div class="log-item-label">🗺️ Coordinates</div><div class="log-item-value"><a href="https://maps.google.com/?q=${log.latitude},${log.longitude}" target="_blank" style="color:var(--accent);text-decoration:none;">${log.latitude}, ${log.longitude} ↗</a></div></div>`:''}
+
           <div class="log-item"><div class="log-item-label">📱 Device</div><div class="log-item-value">${escHtml((log.device||'?')+' · '+(log.os||'?'))}</div></div>
           <div class="log-item"><div class="log-item-label">🌍 Browser</div><div class="log-item-value">${escHtml(log.browser||'?')}</div></div>
           <div class="log-item"><div class="log-item-label">🗣️ Language</div><div class="log-item-value">${escHtml(log.language||'?')}</div></div>
