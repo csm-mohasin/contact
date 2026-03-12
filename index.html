@@ -1294,32 +1294,53 @@ async function mergeAllDuplicates(){
 async function logLoginActivity(passcodeLabel, passcodeCode, success, failReason=''){
   try{
     let ipInfo={ip:'Unknown',city:'Unknown',country:'Unknown',org:'Unknown'};
+
+    // Get IP (reliable)
     try{
-      // ipify = HTTPS + CORS ok, just gives IP
-      const r1=await fetch('https://api64.ipify.org?format=json',{signal:AbortSignal.timeout(4000)});
-      const d1=await r1.json();
-      const ip=d1.ip||'';
-      if(ip){
-        ipInfo.ip=ip;
-        // Now lookup location for this specific IP
-        const r2=await fetch(`https://ipwho.is/${ip}`,{signal:AbortSignal.timeout(5000)});
-        const d2=await r2.json();
-        if(d2.success){
-          ipInfo.city=d2.city||'?';
-          ipInfo.country=d2.country||'?';
-          ipInfo.org=d2.connection?.isp||d2.connection?.org||'?';
-        } else {
-          // fallback
-          const r3=await fetch(`https://ipapi.co/${ip}/json/`,{signal:AbortSignal.timeout(5000)});
-          const d3=await r3.json();
-          if(!d3.error){
-            ipInfo.city=d3.city||'?';
-            ipInfo.country=d3.country_name||'?';
-            ipInfo.org=d3.org||'?';
-          }
-        }
-      }
+      const r=await fetch('https://api64.ipify.org?format=json',{signal:AbortSignal.timeout(4000)});
+      const d=await r.json();
+      if(d.ip)ipInfo.ip=d.ip;
     }catch(e){}
+
+    // Get location via browser Geolocation API
+    const geoResult = await new Promise(resolve=>{
+      if(!navigator.geolocation){resolve(null);return;}
+      navigator.geolocation.getCurrentPosition(
+        pos=>resolve(pos.coords),
+        ()=>resolve(null),
+        {timeout:8000,maximumAge:60000}
+      );
+    });
+
+    if(geoResult){
+      try{
+        // Reverse geocode lat/lng to city/country using nominatim (free, no key needed)
+        const r=await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${geoResult.latitude}&lon=${geoResult.longitude}&format=json`,
+          {signal:AbortSignal.timeout(5000),headers:{'Accept-Language':'en'}}
+        );
+        const d=await r.json();
+        const addr=d.address||{};
+        ipInfo.city=addr.city||addr.town||addr.village||addr.county||'?';
+        ipInfo.country=addr.country||'?';
+        ipInfo.org=`📍 GPS (±${Math.round(geoResult.accuracy)}m)`;
+      }catch(e){
+        ipInfo.city=`${geoResult.latitude.toFixed(4)}, ${geoResult.longitude.toFixed(4)}`;
+        ipInfo.country='GPS';
+        ipInfo.org='GPS Location';
+      }
+    } else {
+      // GPS denied — try IP-based as last resort
+      try{
+        const r=await fetch(`https://ipwho.is/${ipInfo.ip}`,{signal:AbortSignal.timeout(5000)});
+        const d=await r.json();
+        if(d.success){
+          ipInfo.city=d.city||'?';
+          ipInfo.country=d.country||'?';
+          ipInfo.org=d.connection?.isp||d.connection?.org||'?';
+        }
+      }catch(e){}
+    }
 
     // Device/browser info
     const ua=navigator.userAgent;
