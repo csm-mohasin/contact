@@ -916,7 +916,7 @@ async function loadPasscodes(){
         <div class="passcode-row-meta" style="color:var(--accent3);">Full admin access · Unlimited · Never expires</div>
       </div>
       <div class="passcode-actions">
-        <button class="btn ${masterEnabled?'btn-warn':'btn-success'} btn-xs" onclick="toggleMasterPasscode(${!masterEnabled})">${masterEnabled?'Disable':'Enable'}</button>
+        ${!_isMasterUser?`<button class="btn ${masterEnabled?'btn-warn':'btn-success'} btn-xs" onclick="toggleMasterPasscode(${!masterEnabled})">${masterEnabled?'Disable':'Enable'}</button>`:'<span style="font-size:11px;color:var(--muted);">Admin only</span>'}
       </div>
     </div>`;
 
