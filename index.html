@@ -143,6 +143,18 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 
 .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
 .empty-state .empty-icon{font-size:48px;margin-bottom:12px;opacity:0.5;}
 .highlight{background:rgba(0,229,255,0.2);color:var(--accent);border-radius:3px;padding:0 2px;}
+.bulk-bar{display:none;align-items:center;gap:10px;background:rgba(0,229,255,0.06);border:1px solid rgba(0,229,255,0.2);border-radius:12px;padding:10px 16px;margin-bottom:12px;flex-wrap:wrap;}
+.bulk-bar.show{display:flex;}
+.bulk-count{font-size:13px;font-weight:700;color:var(--accent);}
+.cb-cell{width:36px;text-align:center;}
+input[type="checkbox"].row-cb{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+.contacts-table tr.selected td{background:rgba(0,229,255,0.04)!important;}
+.merge-group{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.merge-group-phone{font-family:'Space Mono',monospace;font-size:12px;color:var(--danger);font-weight:700;margin-bottom:10px;}
+.merge-entry{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);}
+.merge-entry:last-child{border-bottom:none;}
+.merge-entry-name{flex:1;font-size:13px;font-weight:600;}
+.merge-keep-badge{font-size:11px;color:var(--success);font-weight:700;}
 .err-box{display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--danger);margin-bottom:14px;line-height:1.5;}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;}
 .toggle-label{font-size:13px;font-weight:600;}
@@ -237,9 +249,26 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 
       <div><div class="toggle-label">Enable immediately</div><div class="toggle-sub">Users can login right away</div></div>
       <label class="toggle-switch"><input type="checkbox" id="pcEnabled" checked/><span class="toggle-slider"></span></label>
     </div>
+    <div class="toggle-row">
+      <div><div class="toggle-label">🔂 One-Time Passcode</div><div class="toggle-sub">Auto-disable after first use</div></div>
+      <label class="toggle-switch"><input type="checkbox" id="pcOneTime"/><span class="toggle-slider"></span></label>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-primary btn-sm" onclick="savePasscode()">💾 Save Passcode</button>
       <button class="btn btn-secondary btn-sm" onclick="closeModal('addPasscodeModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MERGE DUPLICATES MODAL -->
+<div class="modal-overlay" id="mergeModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-title" style="color:var(--accent3);">🔀 Auto Merge Duplicates</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">Same phone number একাধিক contact-এ আছে। Merge করলে সব নাম একটি contact-এ চলে আসবে এবং বাকিগুলো delete হবে।</p>
+    <div id="mergeList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-warn btn-sm" id="mergeAllBtn" onclick="mergeAllDuplicates()">🔀 Merge All</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('mergeModal')">Cancel</button>
     </div>
   </div>
 </div>
@@ -402,14 +431,25 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 
       <div id="tab-contacts" class="tab-content">
         <div class="page-title">All Contacts</div>
         <div id="dupBanner"></div>
+        <!-- BULK ACTION BAR -->
+        <div class="bulk-bar" id="bulkBar">
+          <span class="bulk-count"><span id="bulkCount">0</span> selected</span>
+          <button class="btn btn-success btn-xs" onclick="bulkStar(true)">⭐ Star</button>
+          <button class="btn btn-warn btn-xs" onclick="bulkStar(false)">☆ Unstar</button>
+          <button class="btn btn-danger btn-xs" onclick="bulkDelete()">🗑️ Delete</button>
+          <button class="btn btn-secondary btn-xs" onclick="clearSelection()">✕ Cancel</button>
+        </div>
         <div class="toolbar">
           <div class="toolbar-left">
             <span class="contacts-count" id="adminContactCount">—</span>
             <button class="icon-btn" id="sortToggleBtn" onclick="toggleSort()">⬆ A→Z</button>
             <button class="icon-btn" id="favToggleBtn" onclick="toggleFavFilter()">⭐ Starred</button>
+            <button class="icon-btn" onclick="toggleSelectMode()" id="selectModeBtn">☑️ Select</button>
           </div>
           <div class="toolbar-right">
             <button class="btn btn-success btn-sm" onclick="openModal('addModal')">➕ Add</button>
+            <button class="icon-btn" onclick="openMergeModal()" title="Auto merge duplicate contacts">🔀 Merge Dups</button>
+            <button class="icon-btn" onclick="exportAllVCF('admin')" title="Export all contacts as .vcf">💾 Export VCF</button>
             <button class="copy-all-btn" onclick="copyAllNumbers()">📋 Copy All</button>
           </div>
         </div>
@@ -464,6 +504,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 
       <button class="icon-btn" id="userSortBtn" onclick="toggleUserSort()">⬆ A→Z</button>
       <button class="icon-btn" id="userFavBtn" onclick="toggleUserFav()">⭐ Starred</button>
       <button class="copy-all-btn" onclick="copyAllNumbers()">📋 Copy All</button>
+      <button class="icon-btn" onclick="exportAllVCF('user')" title="Export contacts as .vcf file">💾 Export VCF</button>
       <button class="icon-btn" onclick="syncFromPhone()" title="Sync contacts from your phone">📲 Sync Phone</button>
     </div>
     <div id="userContactsTable"></div>
@@ -677,9 +718,9 @@ function renderAdminContacts(){
   if(!list.length){table.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div><p>No contacts found</p></div>';return;}
   const dupSet=new Set();
   Object.values(window._dups||{}).forEach(arr=>arr.forEach(e=>dupSet.add(e.phone)));
-  table.innerHTML=`<table class="contacts-table"><thead><tr><th>#</th><th>Name</th><th>Phone Numbers</th><th>Actions</th></tr></thead><tbody>`+
-    list.map((c,i)=>`<tr>
-      <td style="color:var(--muted);font-size:12px;width:40px;">${i+1}</td>
+  table.innerHTML=`<table class="contacts-table"><thead><tr>${_selectMode?`<th class="cb-cell"><input type="checkbox" class="row-cb" onchange="toggleSelectAll(this)" title="Select all"></th>`:'<th>#</th>'}<th>Name</th><th>Phone Numbers</th><th>Actions</th></tr></thead><tbody>`+
+    list.map((c,i)=>`<tr class="contact-row${_selectedIds.has(c.id)?' selected':''}" data-id="${c.id}">
+      ${_selectMode?`<td class="cb-cell"><input type="checkbox" class="row-cb" data-id="${c.id}" ${_selectedIds.has(c.id)?'checked':''} onchange="toggleRowSelect('${c.id}')"></td>`:`<td style="color:var(--muted);font-size:12px;width:40px;">${i+1}</td>`}
       <td><div class="contact-name-cell"><button class="star-btn" onclick="toggleStar('${c.id}')">${c.starred?'⭐':'☆'}</button>${hl(c.name,q)}</div></td>
       <td class="phones-cell">${(c.phones||[]).map(p=>`<span class="phone-chip${dupSet.has(p)?' dup-chip':''}" onclick="copyPhone('${escHtml(p)}')" title="${dupSet.has(p)?'⚠️ Duplicate — click to copy':'Click to copy'}">📞 ${hl(p,q)}</span>`).join('')||'<span style="color:var(--muted)">—</span>'}</td>
       <td style="white-space:nowrap;">
@@ -762,9 +803,10 @@ async function loadPasscodes(){
       else if(!pc.enabled)badge='<span class="badge-disabled">Disabled</span>';
       else if(limitReached)badge='<span class="badge-limited">Limit Reached</span>';
       else badge='<span class="badge-enabled">Active</span>';
+      const otBadge=pc.oneTime?'<span style="padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(0,229,255,0.1);color:var(--accent);border:1px solid rgba(0,229,255,0.3);">1× USE</span>':'';
       return `<div class="passcode-row">
         <div class="passcode-row-info">
-          <div class="passcode-row-name">${escHtml(pc.label||'Unnamed')} ${badge}</div>
+          <div class="passcode-row-name">${escHtml(pc.label||'Unnamed')} ${badge} ${otBadge}</div>
           <div class="passcode-row-code">🔑 ${escHtml(pc.code)}</div>
           <div class="passcode-row-meta">Used: ${used}${limit?' / '+limit+' max':' (unlimited)'}${pc.expiry?' · Expires: '+pc.expiry:''}</div>
         </div>
@@ -783,14 +825,15 @@ async function savePasscode(){
   const limit=parseInt(document.getElementById('pcLimit').value)||0;
   const expiry=document.getElementById('pcExpiry').value.trim();
   const enabled=document.getElementById('pcEnabled').checked;
+  const oneTime=document.getElementById('pcOneTime').checked;
   if(!code){showToast('Enter a passcode!','error');return;}
   const {addDoc,collection}=window._fbFns;
   try{
-    await addDoc(collection(window._db,'passcodes'),{label:label||'User',code,limit,expiry:expiry||'',enabled,usedCount:0,createdAt:Date.now()});
+    await addDoc(collection(window._db,'passcodes'),{label:label||'User',code,limit:oneTime?1:limit,expiry:expiry||'',enabled,usedCount:0,createdAt:Date.now(),oneTime});
     closeModal('addPasscodeModal');
     document.getElementById('pcLabel').value='';document.getElementById('pcCode').value='';
     document.getElementById('pcLimit').value='0';document.getElementById('pcExpiry').value='';
-    document.getElementById('pcEnabled').checked=true;
+    document.getElementById('pcEnabled').checked=true;document.getElementById('pcOneTime').checked=false;
     showToast('✅ Passcode added!','success');loadPasscodes();
   }catch(err){showToast('Failed: '+err.message,'error');}
 }
@@ -919,9 +962,12 @@ async function userLogin(){
       btn.disabled=false;btn.textContent='Access Contacts →';return;
     }
     const newCount=(matched.usedCount||0)+1;
-    await updateDoc(doc(db,'passcodes',matched.id),{usedCount:newCount});
-    // Save token so offline access is possible ONLY for this passcode
-    setCachedPassToken(input,newCount);
+    // One-time passcode: auto-disable after use
+    const updateData={usedCount:newCount};
+    if(matched.oneTime){updateData.enabled=false;}
+    await updateDoc(doc(db,'passcodes',matched.id),updateData);
+    if(matched.oneTime){deleteCachedPassToken(input);} // no offline access for one-time
+    else{setCachedPassToken(input,newCount);}
 
     // Fetch and cache contacts
     const cSnap=await getDocs(collection(db,'contacts'));
@@ -972,6 +1018,180 @@ function copyAllNumbers(){
   const all=_allContacts.flatMap(c=>c.phones||[]);
   if(!all.length){showToast('No numbers!','error');return;}
   navigator.clipboard.writeText(all.join('\n')).then(()=>showToast('📋 Copied '+all.length+' numbers!','success'));
+}
+
+// ===== BULK SELECT =====
+let _selectMode=false;
+let _selectedIds=new Set();
+
+function toggleSelectMode(){
+  _selectMode=!_selectMode;
+  _selectedIds.clear();
+  document.getElementById('selectModeBtn').classList.toggle('active',_selectMode);
+  document.getElementById('selectModeBtn').textContent=_selectMode?'✕ Exit Select':'☑️ Select';
+  document.getElementById('bulkBar').classList.toggle('show',false);
+  renderAdminContacts();
+}
+
+function clearSelection(){
+  _selectedIds.clear();
+  _selectMode=false;
+  document.getElementById('selectModeBtn').classList.remove('active');
+  document.getElementById('selectModeBtn').textContent='☑️ Select';
+  document.getElementById('bulkBar').classList.remove('show');
+  renderAdminContacts();
+}
+
+function toggleRowSelect(id){
+  if(_selectedIds.has(id))_selectedIds.delete(id);
+  else _selectedIds.add(id);
+  document.getElementById('bulkCount').textContent=_selectedIds.size;
+  document.getElementById('bulkBar').classList.toggle('show',_selectedIds.size>0);
+  // Update row highlight
+  document.querySelectorAll('.contact-row').forEach(tr=>{
+    if(tr.dataset.id===id)tr.classList.toggle('selected',_selectedIds.has(id));
+  });
+  const cb=document.querySelector(`.row-cb[data-id="${id}"]`);
+  if(cb)cb.checked=_selectedIds.has(id);
+}
+
+function toggleSelectAll(cb){
+  const rows=document.querySelectorAll('.row-cb');
+  rows.forEach(r=>{
+    const id=r.dataset.id;
+    if(cb.checked)_selectedIds.add(id);
+    else _selectedIds.delete(id);
+    r.checked=cb.checked;
+  });
+  document.getElementById('bulkCount').textContent=_selectedIds.size;
+  document.getElementById('bulkBar').classList.toggle('show',_selectedIds.size>0);
+  renderAdminContacts();
+}
+
+async function bulkStar(star){
+  if(!_selectedIds.size){showToast('কোনো contact select নেই!','error');return;}
+  const {doc,updateDoc,writeBatch,collection}=window._fbFns;const db=window._db;
+  const ids=[..._selectedIds];
+  try{
+    const batch=writeBatch(db);
+    ids.forEach(id=>batch.update(doc(db,'contacts',id),{starred:star}));
+    await batch.commit();
+    const favs=getFavs();
+    ids.forEach(id=>{
+      const c=_allContacts.find(x=>x.id===id);
+      if(c)c.starred=star;
+      if(star){if(!favs.includes(id))favs.push(id);}
+      else{const i=favs.indexOf(id);if(i>-1)favs.splice(i,1);}
+    });
+    saveFavs(favs);
+    showToast('✅ '+(star?'Starred':'Unstarred')+' '+ids.length+' contacts!','success');
+    clearSelection();
+  }catch(err){showToast('Failed: '+err.message,'error');}
+}
+
+async function bulkDelete(){
+  if(!_selectedIds.size){showToast('কোনো contact select নেই!','error');return;}
+  const ids=[..._selectedIds];
+  if(!confirm(ids.length+' টি contact delete করবেন?'))return;
+  const {doc,writeBatch,collection}=window._fbFns;const db=window._db;
+  try{
+    const batch=writeBatch(db);
+    ids.forEach(id=>batch.delete(doc(db,'contacts',id)));
+    await batch.commit();
+    _allContacts=_allContacts.filter(c=>!ids.includes(c.id));
+    showDupBanner(detectDuplicates(_allContacts));
+    showToast('🗑️ '+ids.length+' contacts deleted!','success');
+    clearSelection();
+  }catch(err){showToast('Failed: '+err.message,'error');}
+}
+
+// ===== AUTO MERGE DUPLICATES =====
+function openMergeModal(){
+  const dups=detectDuplicates(_allContacts);
+  if(!Object.keys(dups).length){showToast('✅ কোনো duplicate নেই!','success');return;}
+  // Build merge groups: for each dup phone, group the contacts
+  const mergeGroups={};
+  Object.entries(dups).forEach(([phone,entries])=>{
+    // Group by contactId
+    const contacts=entries.map(e=>_allContacts.find(c=>c.id===e.contactId)).filter(Boolean);
+    // Deduplicate contact objects
+    const unique=[...new Map(contacts.map(c=>[c.id,c])).values()];
+    if(unique.length>1)mergeGroups[phone]=unique;
+  });
+  const list=document.getElementById('mergeList');
+  list.innerHTML=Object.entries(mergeGroups).map(([phone,contacts])=>`
+    <div class="merge-group">
+      <div class="merge-group-phone">📞 ${escHtml(phone)}</div>
+      ${contacts.map((c,i)=>`
+        <div class="merge-entry">
+          <div class="merge-entry-name">👤 ${escHtml(c.name)}</div>
+          ${i===0?'<span class="merge-keep-badge">✓ Keep (merged into)</span>':'<span style="font-size:11px;color:var(--danger);">→ will merge & delete</span>'}
+        </div>`).join('')}
+    </div>`).join('');
+  window._mergeGroups=mergeGroups;
+  openModal('mergeModal');
+}
+
+async function mergeAllDuplicates(){
+  const groups=window._mergeGroups;
+  if(!groups||!Object.keys(groups).length){showToast('Nothing to merge!','error');return;}
+  const btn=document.getElementById('mergeAllBtn');
+  btn.disabled=true;btn.textContent='⏳ Merging...';
+  const {doc,updateDoc,deleteDoc,writeBatch}=window._fbFns;const db=window._db;
+  try{
+    // For each group: keep first contact, merge all phones from others into it, delete others
+    const processed=new Set();
+    const batch=writeBatch(db);
+    Object.values(groups).forEach(contacts=>{
+      const keeper=contacts[0];
+      const toDelete=contacts.slice(1);
+      // Gather all unique phones from all contacts in group
+      const allPhones=[...new Set([
+        ...(keeper.phones||[]),
+        ...toDelete.flatMap(c=>c.phones||[])
+      ])];
+      batch.update(doc(db,'contacts',keeper.id),{phones:allPhones});
+      keeper.phones=allPhones;
+      toDelete.forEach(c=>{
+        if(!processed.has(c.id)){
+          batch.delete(doc(db,'contacts',c.id));
+          processed.add(c.id);
+        }
+      });
+    });
+    await batch.commit();
+    // Update local state
+    const deletedIds=new Set(Object.values(groups).flatMap(arr=>arr.slice(1).map(c=>c.id)));
+    _allContacts=_allContacts.filter(c=>!deletedIds.has(c.id));
+    showDupBanner(detectDuplicates(_allContacts));
+    renderAdminContacts();
+    closeModal('mergeModal');
+    showToast('✅ Merge complete! '+deletedIds.size+' duplicates removed.','success');
+  }catch(err){showToast('Merge failed: '+err.message,'error');}
+  finally{btn.disabled=false;btn.textContent='🔀 Merge All';}
+}
+
+// ===== EXPORT ALL AS VCF =====
+function exportAllVCF(source){
+  const contacts = source === 'admin' ? _allContacts : _allContacts;
+  if(!contacts||!contacts.length){showToast('কোনো contact নেই!','error');return;}
+  let vcf='';
+  contacts.forEach(c=>{
+    vcf+='BEGIN:VCARD\r\nVERSION:3.0\r\n';
+    vcf+='FN:'+c.name.replace(/[,;\\]/g,'\\$&')+'\r\n';
+    (c.phones||[]).forEach(p=>{vcf+='TEL;TYPE=CELL:'+p+'\r\n';});
+    vcf+='END:VCARD\r\n';
+  });
+  const blob=new Blob([vcf],{type:'text/vcard;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const now=new Date();
+  const stamp=now.getFullYear()+''+(now.getMonth()+1).toString().padStart(2,'0')+now.getDate().toString().padStart(2,'0');
+  a.download='contacts_'+stamp+'_'+contacts.length+'.vcf';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('✅ '+contacts.length+' contacts exported as .vcf!','success');
 }
 
 // ===== SYNC FROM PHONE (Contact Picker API) =====
