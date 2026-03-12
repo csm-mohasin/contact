@@ -566,34 +566,43 @@ onAuthStateChanged(auth,user=>{if(user&&window.location.hash.startsWith('#/admin
 // ===== UTILS =====
 // ===== HASH ROUTER =====
 let _currentUserLabel='';
+let _accessType=''; // 'admin' | 'master-code' | 'bypass-key'
 
-// Encode label to base62-like token so URL looks like a session token
 function encodeToken(str){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   let hash=0;
   for(let i=0;i<str.length;i++){hash=((hash<<5)-hash+str.charCodeAt(i))|0;}
-  // Deterministic 12-char token from label
   let token='';let seed=Math.abs(hash)||1;
   for(let i=0;i<12;i++){seed=(seed*1664525+1013904223)&0xFFFFFFFF;token+=chars[Math.abs(seed)%chars.length];}
-  // Add 4 random chars for variation
   return 'v1.'+token;
 }
 
-// Update URL when screen changes
+function buildAdminHash(point='upload'){
+  const acc=_accessType||'admin';
+  return `#/access?=${acc}/section?=dashboard/point?=${point}`;
+}
+
+function buildUserHash(label){
+  const token=encodeToken(label||'guest');
+  return `#/access?=bypass-key/session?=${token}`;
+}
+
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id==='landingScreen')         history.replaceState(null,'','#/');
   else if(id==='adminLoginScreen') history.replaceState(null,'','#/auth/signin');
-  else if(id==='adminScreen')      history.replaceState(null,'','#/dashboard/overview');
+  else if(id==='adminScreen')      history.replaceState(null,'',buildAdminHash('upload'));
   else if(id==='userLoginScreen')  history.replaceState(null,'','#/access');
-  else if(id==='userScreen'){
-    const token=_currentUserLabel?encodeToken(_currentUserLabel):'v1.'+encodeToken('guest');
-    history.replaceState(null,'','#/session/'+token);
-  }
+  else if(id==='userScreen')       history.replaceState(null,'',buildUserHash(_currentUserLabel));
 }
 
-// On browser back/forward
+function getTabFromHash(hash){
+  const m=hash.match(/point\?=([^&/#]+)/);
+  const pt=m?m[1]:'upload';
+  return {upload:'upload',contacts:'contacts',passcodes:'passcodes',activity:'activity',settings:'settings'}[pt]||'upload';
+}
+
 window.addEventListener('hashchange',()=>{
   const hash=window.location.hash;
   if(hash==='#/'||hash===''||hash==='#'){
@@ -603,25 +612,15 @@ window.addEventListener('hashchange',()=>{
     if(!document.getElementById('userScreen').classList.contains('active'))showScreen('userLoginScreen');
   } else if(hash==='#/auth/signin'){
     if(!document.getElementById('adminScreen').classList.contains('active'))showScreen('adminLoginScreen');
-  } else if(hash.startsWith('#/dashboard/')&&document.getElementById('adminScreen').classList.contains('active')){
-    // Restore tab from URL on back/forward
-    const tabMap={
-      '#/dashboard/upload':              'upload',
-      '#/dashboard/contacts':            'contacts',
-      '#/dashboard/security/passcodes':  'passcodes',
-      '#/dashboard/security/activity':   'activity',
-      '#/dashboard/settings':            'settings',
-    };
-    const tab=tabMap[hash];
-    if(tab){
-      document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-      document.getElementById('tab-'+tab).classList.add('active');
-      document.getElementById('nav-'+tab).classList.add('active');
-      if(tab==='contacts')loadAdminContacts();
-      if(tab==='passcodes')loadPasscodes();
-      if(tab==='activity')loadActivityLog();
-    }
+  } else if(hash.includes('section?=dashboard')&&document.getElementById('adminScreen').classList.contains('active')){
+    const tab=getTabFromHash(hash);
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.getElementById('tab-'+tab)?.classList.add('active');
+    document.getElementById('nav-'+tab)?.classList.add('active');
+    if(tab==='contacts')loadAdminContacts();
+    if(tab==='passcodes')loadPasscodes();
+    if(tab==='activity')loadActivityLog();
   }
 });
 
@@ -636,15 +635,7 @@ function switchTab(tab){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   document.getElementById('nav-'+tab).classList.add('active');
-  // Update URL for each tab
-  const tabRoutes={
-    'upload':   '#/dashboard/upload',
-    'contacts': '#/dashboard/contacts',
-    'passcodes':'#/dashboard/security/passcodes',
-    'activity': '#/dashboard/security/activity',
-    'settings': '#/dashboard/settings',
-  };
-  history.replaceState(null,'',tabRoutes[tab]||'#/dashboard/overview');
+  history.replaceState(null,'',buildAdminHash(tab));
   if(tab==='contacts')loadAdminContacts();
   if(tab==='passcodes')loadPasscodes();
   if(tab==='activity')loadActivityLog();
@@ -1005,12 +996,11 @@ async function adminLogin(){
   const pass=document.getElementById('adminPass').value;
   if(!email||!pass){showToast('Fill all fields!','error');return;}
   const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='Signing in...';
-  try{await window._fbFns.signInWithEmailAndPassword(window._auth,email,pass);showToast('✅ Logged in!','success');loadAdminDashboard();}
+  try{await window._fbFns.signInWithEmailAndPassword(window._auth,email,pass);showToast('✅ Logged in!','success');_accessType='admin';loadAdminDashboard();}
   catch(err){showToast('Login failed: '+err.message,'error');}
   finally{btn.disabled=false;btn.textContent='Login →';}
 }
-async function adminLogout(){await window._fbFns.signOut(window._auth);window.location.hash='';_allContacts=[];showScreen('landingScreen');showToast('Logged out','info');}
-function loadAdminDashboard(){showScreen('adminScreen');window.location.hash='#admin';}
+async function adminLogout(){await window._fbFns.signOut(window._auth);_allContacts=[];_accessType='';showScreen('landingScreen');showToast('Logged out','info');}function loadAdminDashboard(){showScreen('adminScreen');switchTab('upload');}
 
 // ===== MASTER PASSCODE (hardcoded — never changes) =====
 const MASTER_PASSCODE='samiya';
@@ -1071,6 +1061,7 @@ async function userLogin(){
       }
     }catch(e){}
     _isMasterUser=true;
+    _accessType='master-code';
     if(isOnline){
       try{
         const {getDocs,collection}=window._fbFns;
@@ -1186,6 +1177,8 @@ async function userLogin(){
     }
 
     logLoginActivity(matched.label||'User', matched.code, true);
+    _currentUserLabel=matched.label||'user';
+    _accessType='bypass-key';
     btn.disabled=false;btn.textContent='Access Contacts →';
     showToast('✅ Access granted!','success');
     showUserScreen(contacts, matched.label||'user');
@@ -1203,8 +1196,7 @@ async function userLogin(){
   }
 }
 
-function userLogout(){_allContacts=[];_isMasterUser=false;_currentUserLabel='';document.getElementById('userPasscode').value='';document.getElementById('userLoginError').style.display='none';showScreen('landingScreen');}
-
+function userLogout(){_allContacts=[];_isMasterUser=false;_currentUserLabel='';_accessType='';document.getElementById('userPasscode').value='';document.getElementById('userLoginError').style.display='none';showScreen('landingScreen');}
 // ===== USER RENDER =====
 function renderUserContacts(){
   const q=(document.getElementById('userSearch')?.value||'').trim().toLowerCase();
