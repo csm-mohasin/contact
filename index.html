@@ -941,19 +941,30 @@ async function userLogin(){
   // Online: full verification
   const {getDocs,collection,doc,updateDoc}=window._fbFns;const db=window._db;
   try{
-    const snap=await getDocs(collection(db,'passcodes'));
+    let snap;
+    try{
+      snap=await getDocs(collection(db,'passcodes'));
+    }catch(fetchErr){
+      // Firebase fetch failed — try offline cache fallback
+      const cached=getCachedContacts();
+      const token=getCachedPassToken(input);
+      if(cached&&token){showToast('📦 Offline mode — cached contacts','warn');showUserScreen(cached);}
+      else{errBox.textContent='⛔ Firebase সংযোগ হচ্ছে না। Internet চেক করুন অথবা আগে একবার online-এ login করুন।';errBox.style.display='block';}
+      btn.disabled=false;btn.textContent='Access Contacts →';return;
+    }
     const codes=snap.docs.map(d=>({id:d.id,...d.data()}));
     const now=new Date();
     let matched=null,errMsg='';
     for(const pc of codes){
       if(pc.code!==input)continue;
-      if(!pc.enabled){errMsg='This passcode is currently disabled.';break;}
-      if(pc.expiry&&new Date(pc.expiry)<now){errMsg='This passcode expired on '+pc.expiry+'.';break;}
+      if(!pc.enabled){errMsg='এই passcode টি disabled করা আছে।';break;}
+      if(pc.expiry&&new Date(pc.expiry)<now){errMsg='এই passcode টি '+pc.expiry+' তারিখে expire হয়ে গেছে।';break;}
       const used=pc.usedCount||0,limit=pc.limit||0;
       if(limit>0&&used>=limit){
-        // Limit reached — also remove any cached token so offline won't work either
         deleteCachedPassToken(input);
-        errMsg='This passcode has reached its limit ('+limit+' uses).';break;
+        if(pc.oneTime){errMsg='এই passcode টি one-time ছিল এবং ইতিমধ্যে ব্যবহার হয়ে গেছে।';}
+        else{errMsg='এই passcode-এর limit শেষ ('+limit+' বার ব্যবহার হয়েছে)।';}
+        break;
       }
       matched=pc;break;
     }
@@ -961,22 +972,35 @@ async function userLogin(){
       errBox.textContent='⛔ '+(errMsg||'Wrong passcode!');errBox.style.display='block';
       btn.disabled=false;btn.textContent='Access Contacts →';return;
     }
-    const newCount=(matched.usedCount||0)+1;
-    // One-time passcode: auto-disable after use
-    const updateData={usedCount:newCount};
-    if(matched.oneTime){updateData.enabled=false;}
-    await updateDoc(doc(db,'passcodes',matched.id),updateData);
-    if(matched.oneTime){deleteCachedPassToken(input);} // no offline access for one-time
-    else{setCachedPassToken(input,newCount);}
-
-    // Fetch and cache contacts
-    const cSnap=await getDocs(collection(db,'contacts'));
-    const contacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
-    setCachedContacts(contacts);
+    // First fetch contacts (so even if update fails, user gets in)
+    let contacts=[];
+    try{
+      const cSnap=await getDocs(collection(db,'contacts'));
+      contacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+      setCachedContacts(contacts);
+    }catch(cErr){
+      // Try cache
+      const cached=getCachedContacts();
+      if(cached){contacts=cached;showToast('📦 Cached contacts loaded','warn');}
+      else{errBox.textContent='⛔ Contacts লোড হচ্ছে না। Internet চেক করুন।';errBox.style.display='block';btn.disabled=false;btn.textContent='Access Contacts →';return;}
+    }
+    // Update usedCount and disable if one-time (best effort — don't block login if this fails)
+    try{
+      const newCount=(matched.usedCount||0)+1;
+      const updateData={usedCount:newCount};
+      if(matched.oneTime){updateData.enabled=false;}
+      await updateDoc(doc(db,'passcodes',matched.id),updateData);
+      if(matched.oneTime){deleteCachedPassToken(input);}
+      else{setCachedPassToken(input,newCount);}
+    }catch(uErr){
+      // Update failed silently — user still gets in
+      console.warn('Passcode update failed:',uErr);
+      if(!matched.oneTime)setCachedPassToken(input,(matched.usedCount||0)+1);
+    }
     showToast('✅ Access granted!','success');
     showUserScreen(contacts);
   }catch(err){
-    errBox.textContent='⛔ Connection error. Check internet.';errBox.style.display='block';
+    errBox.textContent='⛔ Unexpected error: '+err.message;errBox.style.display='block';
   }
   finally{btn.disabled=false;btn.textContent='Access Contacts →';}
 }
