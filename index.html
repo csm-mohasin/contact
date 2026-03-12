@@ -254,6 +254,80 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 
   </div>
 </div>
 
+<!-- VCF EXPORT GUIDE MODAL -->
+<div class="modal-overlay" id="vcfGuideModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-title">📖 Phone থেকে Contacts Export করুন</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">Desktop Chrome, Firefox, Safari — সব browser-এ এই method কাজ করে।</p>
+
+    <!-- Android -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">🤖 Android</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">1</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;"><strong>Contacts</strong> app খুলুন</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">2</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;"><strong>Menu (⋮)</strong> → <strong>Manage Contacts</strong> → <strong>Export</strong> তে যান</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">3</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;"><strong>.vcf</strong> format সিলেক্ট করে phone storage-এ save করুন</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">4</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;">উপরের <strong>Upload VCF</strong> zone-এ সেই file টি দিন</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- iPhone -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:#a78bfa;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">🍎 iPhone (iOS)</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">1</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;"><strong>iCloud.com</strong> অথবা <strong>Settings → Apple ID → iCloud → Contacts</strong> থেকে export করুন</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">2</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;">iCloud.com → Contacts → সব select (<strong>Ctrl+A</strong>) → Export vCard</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">3</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;">Download হওয়া <strong>.vcf</strong> file উপরে upload করুন</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Contacts -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:4px;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent3);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">🌐 Google Contacts (Desktop)</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,#d97706,var(--accent3));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">1</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;"><strong>contacts.google.com</strong> খুলুন</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,#d97706,var(--accent3));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">2</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;">বাম পাশে <strong>Export</strong> → <strong>vCard (.vcf)</strong> সিলেক্ট করুন</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:24px;height:24px;background:linear-gradient(135deg,#d97706,var(--accent3));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">3</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.5;">Download হওয়া file উপরে <strong>Upload VCF</strong>-এ দিন</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" onclick="closeModal('vcfGuideModal');document.getElementById('vcfFileInput').click()">📁 এখনই Upload করুন</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('vcfGuideModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- LANDING -->
 <div id="landingScreen" class="screen active">
   <div class="card">
@@ -311,6 +385,17 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 
         <input type="file" id="vcfFileInput" accept=".vcf" onchange="handleVcfFile(event)"/>
         <div id="parseResult" style="margin-top:18px;"></div>
         <div id="uploadPreview" style="margin-top:10px;"></div>
+
+        <!-- SYNC FROM PHONE -->
+        <div style="margin-top:28px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">📱 Sync from Phone</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">Android Chrome-এ সরাসরি phone contacts pick করুন। Desktop বা অন্য browser হলে VCF export guide দেখুন।</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-warn btn-sm" onclick="syncFromPhone()" id="syncPhoneBtn">📲 Pick Contacts (Android Chrome)</button>
+            <button class="btn btn-secondary btn-sm" onclick="openModal('vcfGuideModal')">📖 VCF Export Guide</button>
+          </div>
+          <div id="syncResult" style="margin-top:14px;"></div>
+        </div>
       </div>
 
       <!-- CONTACTS -->
@@ -379,6 +464,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 
       <button class="icon-btn" id="userSortBtn" onclick="toggleUserSort()">⬆ A→Z</button>
       <button class="icon-btn" id="userFavBtn" onclick="toggleUserFav()">⭐ Starred</button>
       <button class="copy-all-btn" onclick="copyAllNumbers()">📋 Copy All</button>
+      <button class="icon-btn" onclick="syncFromPhone()" title="Sync contacts from your phone">📲 Sync Phone</button>
     </div>
     <div id="userContactsTable"></div>
   </div>
@@ -886,6 +972,60 @@ function copyAllNumbers(){
   const all=_allContacts.flatMap(c=>c.phones||[]);
   if(!all.length){showToast('No numbers!','error');return;}
   navigator.clipboard.writeText(all.join('\n')).then(()=>showToast('📋 Copied '+all.length+' numbers!','success'));
+}
+
+// ===== SYNC FROM PHONE (Contact Picker API) =====
+async function syncFromPhone(){
+  // Check if Contact Picker API is supported (Android Chrome only)
+  if(!('contacts' in navigator && 'ContactsManager' in window)){
+    // Show guide modal for desktop/unsupported browsers
+    openModal('vcfGuideModal');
+    return;
+  }
+  const btn=document.getElementById('syncPhoneBtn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Loading...';}
+  try{
+    const props=['name','tel'];
+    const opts={multiple:true};
+    const selected=await navigator.contacts.select(props,opts);
+    if(!selected||!selected.length){
+      showToast('কোনো contact select করা হয়নি।','warn');
+      if(btn){btn.disabled=false;btn.textContent='📲 Pick Contacts (Android Chrome)';}
+      return;
+    }
+    // Map to our format
+    const toSave=selected
+      .filter(c=>c.tel&&c.tel.length>0)
+      .map(c=>({
+        name:(c.name&&c.name[0])||'Unknown',
+        phones:c.tel.map(p=>p.replace(/\s+/g,'').replace(/-/g,'')).filter(p=>p.length>5)
+      }))
+      .filter(c=>c.phones.length>0);
+
+    if(!toSave.length){showToast('Selected contacts-এ কোনো phone number নেই!','error');if(btn){btn.disabled=false;btn.textContent='📲 Pick Contacts (Android Chrome)';}return;}
+
+    // Save to Firebase
+    const db=window._db;
+    const {writeBatch,collection,doc}=window._fbFns;
+    showToast('☁️ Saving '+toSave.length+' contacts...','info');
+    for(let i=0;i<toSave.length;i+=490){
+      const batch=writeBatch(db);
+      toSave.slice(i,i+490).forEach(c=>{
+        const ref=doc(collection(db,'contacts'),'c_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
+        batch.set(ref,{name:c.name,phones:c.phones,createdAt:Date.now(),starred:false});
+      });
+      await batch.commit();
+    }
+    showToast('✅ '+toSave.length+' contacts phone থেকে save হয়েছে!','success');
+    const res=document.getElementById('syncResult');
+    if(res)res.innerHTML='<div style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--success);margin-top:4px;">✅ <strong>'+toSave.length+'টি contact</strong> সফলভাবে Firebase-এ save হয়েছে!</div>';
+    if(document.getElementById('tab-contacts').classList.contains('active'))loadAdminContacts();
+  }catch(err){
+    if(err.name==='AbortError'||err.message?.includes('cancelled')){showToast('Contact picker বন্ধ করা হয়েছে।','warn');}
+    else{showToast('Error: '+err.message,'error');}
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='📲 Pick Contacts (Android Chrome)';}
+  }
 }
 
 // ===== EVENTS =====
