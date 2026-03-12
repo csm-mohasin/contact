@@ -877,6 +877,8 @@ function getCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('c
 function deleteCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');delete t[code];localStorage.setItem('cv_pass_tokens',JSON.stringify(t));}catch{}}
 
 function showUserScreen(contacts){
+  // Normalize — ensure phones is always an array
+  contacts=contacts.map(c=>({...c,phones:Array.isArray(c.phones)?c.phones:(c.phones?[c.phones]:[])}));
   const favs=getFavs();contacts.forEach(c=>{if(favs.includes(c.id))c.starred=true;});
   _allContacts=contacts;
   const totalNums=contacts.reduce((s,c)=>s+(c.phones?.length||0),0);
@@ -884,7 +886,8 @@ function showUserScreen(contacts){
   document.getElementById('userTotalContacts').textContent=contacts.length;
   document.getElementById('userTotalNumbers').textContent=totalNums;
   document.getElementById('userTotalFavs').textContent=totalFavs;
-  showScreen('userScreen');renderUserContacts();
+  showScreen('userScreen');
+  setTimeout(()=>renderUserContacts(),50); // slight delay to ensure DOM is ready
 }
 
 // ===== USER LOGIN (Master + Multi-Passcode + Limit + Expiry + Offline) =====
@@ -931,7 +934,7 @@ async function userLogin(){
       errBox.textContent='⛔ No internet. This passcode needs online verification first.';
       errBox.style.display='block';btn.disabled=false;btn.textContent='Access Contacts →';return;
     }
-    // Passcode was verified before — show cached contacts (limit already enforced online)
+    // Offline — use cache (limit enforced online, can't recheck here)
     const cached=getCachedContacts();
     if(cached){showToast('📦 Offline mode — cached contacts','warn');showUserScreen(cached);}
     else{errBox.textContent='⛔ No cached data. Login online first.';errBox.style.display='block';}
@@ -972,30 +975,28 @@ async function userLogin(){
       errBox.textContent='⛔ '+(errMsg||'Wrong passcode!');errBox.style.display='block';
       btn.disabled=false;btn.textContent='Access Contacts →';return;
     }
-    // First fetch contacts (so even if update fails, user gets in)
-    let contacts=[];
+    // Update usedCount FIRST — so next login correctly sees the incremented count
+    const newCount=(matched.usedCount||0)+1;
     try{
-      const cSnap=await getDocs(collection(db,'contacts'));
-      contacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
-      setCachedContacts(contacts);
-    }catch(cErr){
-      // Try cache
-      const cached=getCachedContacts();
-      if(cached){contacts=cached;showToast('📦 Cached contacts loaded','warn');}
-      else{errBox.textContent='⛔ Contacts লোড হচ্ছে না। Internet চেক করুন।';errBox.style.display='block';btn.disabled=false;btn.textContent='Access Contacts →';return;}
-    }
-    // Update usedCount and disable if one-time (best effort — don't block login if this fails)
-    try{
-      const newCount=(matched.usedCount||0)+1;
       const updateData={usedCount:newCount};
       if(matched.oneTime){updateData.enabled=false;}
       await updateDoc(doc(db,'passcodes',matched.id),updateData);
       if(matched.oneTime){deleteCachedPassToken(input);}
       else{setCachedPassToken(input,newCount);}
     }catch(uErr){
-      // Update failed silently — user still gets in
       console.warn('Passcode update failed:',uErr);
-      if(!matched.oneTime)setCachedPassToken(input,(matched.usedCount||0)+1);
+      if(!matched.oneTime)setCachedPassToken(input,newCount);
+    }
+    // Then fetch contacts
+    let contacts=[];
+    try{
+      const cSnap=await getDocs(collection(db,'contacts'));
+      contacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+      setCachedContacts(contacts);
+    }catch(cErr){
+      const cached=getCachedContacts();
+      if(cached){contacts=cached;showToast('📦 Cached contacts loaded','warn');}
+      else{errBox.textContent='⛔ Contacts লোড হচ্ছে না। Internet চেক করুন।';errBox.style.display='block';btn.disabled=false;btn.textContent='Access Contacts →';return;}
     }
     showToast('✅ Access granted!','success');
     showUserScreen(contacts);
