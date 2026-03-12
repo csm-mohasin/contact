@@ -824,15 +824,38 @@ async function deleteAllContacts(){
 
 // ===== PASSCODE MANAGEMENT =====
 async function loadPasscodes(){
-  const {getDocs,collection}=window._fbFns;
+  const {getDocs,collection,getDoc,doc}=window._fbFns;
   const list=document.getElementById('passcodeList');
   list.innerHTML='<div class="spinner"></div>';
   try{
+    // Load master passcode config
+    let masterEnabled=true;
+    try{
+      const mDoc=await getDoc(doc(window._db,'config','master'));
+      if(mDoc.exists())masterEnabled=mDoc.data().enabled!==false;
+    }catch(e){}
+
     const snap=await getDocs(collection(window._db,'passcodes'));
     const codes=snap.docs.map(d=>({id:d.id,...d.data()}));
-    if(!codes.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🔑</div><p>No passcodes yet.<br>Add one above.</p></div>';return;}
     const now=new Date();
-    list.innerHTML=codes.map(pc=>{
+
+    // Master passcode card (always at top)
+    const masterCard=`<div class="passcode-row" style="border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);">
+      <div class="passcode-row-info">
+        <div class="passcode-row-name">👑 Master Passcode <span class="badge-${masterEnabled?'enabled':'disabled'}">${masterEnabled?'Active':'Disabled'}</span></div>
+        <div class="passcode-row-code">🔑 ${escHtml(MASTER_PASSCODE)}</div>
+        <div class="passcode-row-meta" style="color:var(--accent3);">Full admin access · Unlimited · Never expires</div>
+      </div>
+      <div class="passcode-actions">
+        <button class="btn ${masterEnabled?'btn-warn':'btn-success'} btn-xs" onclick="toggleMasterPasscode(${!masterEnabled})">${masterEnabled?'Disable':'Enable'}</button>
+      </div>
+    </div>`;
+
+    if(!codes.length){
+      list.innerHTML=masterCard+'<div class="empty-state" style="margin-top:16px;"><div class="empty-icon">🔑</div><p>No user passcodes yet.<br>Add one above.</p></div>';
+      return;
+    }
+    list.innerHTML=masterCard+codes.map(pc=>{
       const expired=pc.expiry&&new Date(pc.expiry)<now;
       const used=pc.usedCount||0;const limit=pc.limit||0;
       const limitReached=limit>0&&used>=limit;
@@ -855,6 +878,15 @@ async function loadPasscodes(){
       </div>`;
     }).join('');
   }catch(err){list.innerHTML='<p style="color:var(--danger);font-size:13px;padding:16px;">Error: '+err.message+'</p>';}
+}
+
+async function toggleMasterPasscode(enable){
+  const {doc,setDoc}=window._fbFns;
+  try{
+    await setDoc(doc(window._db,'config','master'),{enabled:enable});
+    showToast(enable?'👑 Master passcode enabled!':'⛔ Master passcode disabled!',enable?'success':'warn');
+    loadPasscodes();
+  }catch(err){showToast('Failed: '+err.message,'error');}
 }
 
 async function savePasscode(){
@@ -949,6 +981,16 @@ async function userLogin(){
 
   // ── MASTER PASSCODE ──────────────────────────────────────
   if(input===MASTER_PASSCODE){
+    // Check if master is disabled
+    try{
+      const {getDoc,doc}=window._fbFns;
+      const mDoc=await getDoc(doc(window._db,'config','master'));
+      if(mDoc.exists()&&mDoc.data().enabled===false){
+        errBox.textContent='⛔ Master passcode disabled করা হয়েছে।';
+        errBox.style.display='block';
+        btn.disabled=false;btn.textContent='Access Contacts →';return;
+      }
+    }catch(e){}
     _isMasterUser=true;
     if(isOnline){
       try{
@@ -958,19 +1000,35 @@ async function userLogin(){
         setCachedContacts(contacts);
         logLoginActivity('Master Access','[MASTER]',true);
         btn.disabled=false;btn.textContent='Access Contacts →';
-        showToast('✅ Access granted!','success');
-        showUserScreen(contacts);return;
+        showToast('✅ Master access granted!','success');
+        // Master passcode → full admin dashboard
+        _allContacts=contacts;
+        const favs=getFavs();_allContacts.forEach(c=>{if(favs.includes(c.id))c.starred=true;});
+        showDupBanner(detectDuplicates(_allContacts));
+        showScreen('adminScreen');
+        switchTab('contacts');
+        // Hide admin-only controls master shouldn't touch (none — full access)
+        return;
       }catch(e){
         const cached=getCachedContacts();
-        if(cached){btn.disabled=false;btn.textContent='Access Contacts →';showToast('📦 Cached contacts','warn');showUserScreen(cached);return;}
+        if(cached){
+          btn.disabled=false;btn.textContent='Access Contacts →';
+          showToast('📦 Cached contacts','warn');
+          _allContacts=cached;
+          const favs=getFavs();_allContacts.forEach(c=>{if(favs.includes(c.id))c.starred=true;});
+          showScreen('adminScreen');switchTab('contacts');return;
+        }
         errBox.textContent='⛔ Contacts load হচ্ছে না।';errBox.style.display='block';
         btn.disabled=false;btn.textContent='Access Contacts →';return;
       }
     }else{
       const cached=getCachedContacts();
       btn.disabled=false;btn.textContent='Access Contacts →';
-      if(cached){showToast('📦 Offline mode','warn');showUserScreen(cached);}
-      else{errBox.textContent='⛔ No internet & no cached data.';errBox.style.display='block';}
+      if(cached){
+        showToast('📦 Offline mode','warn');
+        _allContacts=cached;
+        showScreen('adminScreen');switchTab('contacts');
+      }else{errBox.textContent='⛔ No internet & no cached data.';errBox.style.display='block';}
       return;
     }
   }
