@@ -155,6 +155,16 @@ input[type="checkbox"].row-cb{width:16px;height:16px;accent-color:var(--accent);
 .merge-entry:last-child{border-bottom:none;}
 .merge-entry-name{flex:1;font-size:13px;font-weight:600;}
 .merge-keep-badge{font-size:11px;color:var(--success);font-weight:700;}
+.log-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:10px;transition:border-color 0.2s;}
+.log-card:hover{border-color:rgba(0,229,255,0.2);}
+.log-card-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.log-badge-code{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.3);border-radius:6px;padding:3px 10px;}
+.log-badge-master{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;background:rgba(245,158,11,0.15);color:var(--accent3);border:1px solid rgba(245,158,11,0.3);border-radius:6px;padding:3px 10px;}
+.log-time{font-size:12px;color:var(--muted);}
+.log-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.log-item{background:var(--surface2);border-radius:8px;padding:8px 12px;}
+.log-item-label{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.log-item-value{font-size:12px;color:var(--text);font-family:'Space Mono',monospace;word-break:break-all;}
 .err-box{display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--danger);margin-bottom:14px;line-height:1.5;}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;}
 .toggle-label{font-size:13px;font-weight:600;}
@@ -357,6 +367,23 @@ input[type="checkbox"].row-cb{width:16px;height:16px;accent-color:var(--accent);
   </div>
 </div>
 
+<!-- MASTER PASSCODE PROMPT MODAL -->
+<div class="modal-overlay" id="masterPromptModal">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">🔐 Master Passcode Required</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">VCF export করতে Master Passcode দিন।</p>
+    <div class="form-group">
+      <label>Master Passcode</label>
+      <input type="password" id="masterPromptInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')verifyMasterAndExport()"/>
+    </div>
+    <div class="err-box" id="masterPromptError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" onclick="verifyMasterAndExport()">✅ Verify & Export</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('masterPromptModal');document.getElementById('masterPromptInput').value='';document.getElementById('masterPromptError').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- LANDING -->
 <div id="landingScreen" class="screen active">
   <div class="card">
@@ -396,6 +423,7 @@ input[type="checkbox"].row-cb{width:16px;height:16px;accent-color:var(--accent);
       <div class="nav-item active" id="nav-upload" onclick="switchTab('upload')"><span>📤</span> Upload VCF</div>
       <div class="nav-item" id="nav-contacts" onclick="switchTab('contacts')"><span>👥</span> Contacts</div>
       <div class="nav-item" id="nav-passcodes" onclick="switchTab('passcodes')"><span>🔑</span> Passcodes</div>
+      <div class="nav-item" id="nav-activity" onclick="switchTab('activity')"><span>📊</span> Activity</div>
       <div class="nav-item" id="nav-settings" onclick="switchTab('settings')"><span>⚙️</span> Settings</div>
       <div class="sidebar-bottom">
         <div class="nav-item" onclick="adminLogout()"><span>🚪</span> Logout</div>
@@ -470,6 +498,16 @@ input[type="checkbox"].row-cb{width:16px;height:16px;accent-color:var(--accent);
         <div id="passcodeList"><div class="spinner"></div></div>
       </div>
 
+      <!-- ACTIVITY LOG -->
+      <div id="tab-activity" class="tab-content">
+        <div class="page-title">Access Activity Log</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div style="font-size:13px;color:var(--muted);">প্রতিটি login-এর IP, device, time সহ সব তথ্য।</div>
+          <button class="btn btn-danger btn-sm" onclick="clearActivityLog()">🗑️ Clear All Logs</button>
+        </div>
+        <div id="activityLogList"><div class="spinner"></div></div>
+      </div>
+
       <!-- SETTINGS -->
       <div id="tab-settings" class="tab-content">
         <div class="page-title">Settings</div>
@@ -504,7 +542,7 @@ input[type="checkbox"].row-cb{width:16px;height:16px;accent-color:var(--accent);
       <button class="icon-btn" id="userSortBtn" onclick="toggleUserSort()">⬆ A→Z</button>
       <button class="icon-btn" id="userFavBtn" onclick="toggleUserFav()">⭐ Starred</button>
       <button class="copy-all-btn" onclick="copyAllNumbers()">📋 Copy All</button>
-      <button class="icon-btn" onclick="exportAllVCF('user')" title="Export contacts as .vcf file">💾 Export VCF</button>
+      <button class="icon-btn" onclick="checkMasterAndExport()" title="Export contacts as .vcf file" id="exportVcfBtn">💾 Export VCF</button>
       <button class="icon-btn" onclick="syncFromPhone()" title="Sync contacts from your phone">📲 Sync Phone</button>
     </div>
     <div id="userContactsTable"></div>
@@ -532,7 +570,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function showToast(msg,type='info'){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;clearTimeout(window._tt);window._tt=setTimeout(()=>{t.className='';},3500);}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function hl(text,q){if(!q)return escHtml(text);const s=escHtml(String(text));const re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');return s.replace(re,'<span class="highlight">$1</span>');}
-function switchTab(tab){document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');document.getElementById('nav-'+tab).classList.add('active');if(tab==='contacts')loadAdminContacts();if(tab==='passcodes')loadPasscodes();}
+function switchTab(tab){document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');document.getElementById('nav-'+tab).classList.add('active');if(tab==='contacts')loadAdminContacts();if(tab==='passcodes')loadPasscodes();if(tab==='activity')loadActivityLog();}
 function dragOver(e){e.preventDefault();document.getElementById('uploadZone').classList.add('dragover');}
 function dragLeave(){document.getElementById('uploadZone').classList.remove('dragover');}
 function dropFile(e){e.preventDefault();dragLeave();const f=e.dataTransfer.files[0];if(f)processVcfFile(f);}
@@ -911,12 +949,14 @@ async function userLogin(){
 
   // ── MASTER PASSCODE ──────────────────────────────────────
   if(input===MASTER_PASSCODE){
+    _isMasterUser=true;
     if(isOnline){
       try{
         const {getDocs,collection}=window._fbFns;
         const cSnap=await getDocs(collection(window._db,'contacts'));
         const contacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
         setCachedContacts(contacts);
+        logLoginActivity('Master Access','[MASTER]',true);
         btn.disabled=false;btn.textContent='Access Contacts →';
         showToast('✅ Access granted!','success');
         showUserScreen(contacts);return;
@@ -970,6 +1010,7 @@ async function userLogin(){
     }
 
     if(!matched){
+      logLoginActivity('Unknown','[WRONG]',false, errMsg||'Wrong passcode');
       errBox.textContent='⛔ '+(errMsg||'Wrong passcode!');
       errBox.style.display='block';
       btn.disabled=false;btn.textContent='Access Contacts →';return;
@@ -1006,6 +1047,7 @@ async function userLogin(){
       // Still allow login — contacts already loaded
     }
 
+    logLoginActivity(matched.label||'User', matched.code, true);
     btn.disabled=false;btn.textContent='Access Contacts →';
     showToast('✅ Access granted!','success');
     showUserScreen(contacts);
@@ -1023,7 +1065,7 @@ async function userLogin(){
   }
 }
 
-function userLogout(){_allContacts=[];document.getElementById('userPasscode').value='';document.getElementById('userLoginError').style.display='none';showScreen('landingScreen');}
+function userLogout(){_allContacts=[];_isMasterUser=false;document.getElementById('userPasscode').value='';document.getElementById('userLoginError').style.display='none';showScreen('landingScreen');}
 
 // ===== USER RENDER =====
 function renderUserContacts(){
@@ -1246,6 +1288,126 @@ async function mergeAllDuplicates(){
     showToast('✅ Merge complete! '+allDeletedIds.size+' duplicate contact'+(allDeletedIds.size>1?'s':'')+' removed.','success');
   }catch(err){showToast('Merge failed: '+err.message,'error');}
   finally{btn.disabled=false;btn.textContent='🔀 Merge All';}
+}
+
+// ===== ACTIVITY LOG =====
+async function logLoginActivity(passcodeLabel, passcodeCode, success, failReason=''){
+  try{
+    // Get IP and location info
+    let ipInfo={ip:'Unknown',city:'Unknown',country:'Unknown',org:'Unknown'};
+    try{
+      const r=await fetch('https://ipapi.co/json/');
+      if(r.ok){const d=await r.json();ipInfo={ip:d.ip||'?',city:d.city||'?',country:d.country_name||'?',org:d.org||'?'};}
+    }catch(e){}
+
+    // Device/browser info
+    const ua=navigator.userAgent;
+    let device='Unknown', browser='Unknown', os='Unknown';
+    if(/Android/i.test(ua))os='Android';
+    else if(/iPhone|iPad/i.test(ua))os='iOS';
+    else if(/Windows/i.test(ua))os='Windows';
+    else if(/Mac/i.test(ua))os='Mac';
+    else if(/Linux/i.test(ua))os='Linux';
+    if(/Chrome/i.test(ua)&&!/Edg/i.test(ua))browser='Chrome';
+    else if(/Firefox/i.test(ua))browser='Firefox';
+    else if(/Safari/i.test(ua)&&!/Chrome/i.test(ua))browser='Safari';
+    else if(/Edg/i.test(ua))browser='Edge';
+    if(/Mobile/i.test(ua))device='Mobile';
+    else if(/Tablet/i.test(ua))device='Tablet';
+    else device='Desktop';
+
+    const {addDoc,collection}=window._fbFns;
+    await addDoc(collection(window._db,'activity_logs'),{
+      passcodeLabel,passcodeCode,
+      success,failReason,
+      ip:ipInfo.ip,city:ipInfo.city,country:ipInfo.country,isp:ipInfo.org,
+      device,browser,os,
+      userAgent:ua.substring(0,200),
+      screen:screen.width+'x'+screen.height,
+      language:navigator.language||'?',
+      timestamp:Date.now(),
+      timeStr:new Date().toLocaleString('bn-BD',{timeZone:'Asia/Dhaka'})
+    });
+  }catch(e){console.warn('Activity log failed:',e);}
+}
+
+async function loadActivityLog(){
+  const {getDocs,collection,query,orderBy}=window._fbFns;
+  const list=document.getElementById('activityLogList');
+  list.innerHTML='<div class="spinner"></div>';
+  try{
+    const snap=await getDocs(collection(window._db,'activity_logs'));
+    const logs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+    if(!logs.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>কোনো activity নেই এখনো</p></div>';return;}
+    list.innerHTML=logs.map(log=>`
+      <div class="log-card">
+        <div class="log-card-top">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="${log.passcodeCode==='[MASTER]'?'log-badge-master':'log-badge-code'}">${log.passcodeCode==='[MASTER]'?'👑 MASTER':('🔑 '+escHtml(log.passcodeCode||'?'))}</span>
+            <span style="font-size:13px;font-weight:600;">${escHtml(log.passcodeLabel||'')}</span>
+            ${log.success
+              ?'<span style="font-size:11px;font-weight:700;color:var(--success);background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:2px 8px;">✅ Success</span>'
+              :`<span style="font-size:11px;font-weight:700;color:var(--danger);background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:2px 8px;">❌ Failed</span>`}
+          </div>
+          <span class="log-time">🕐 ${escHtml(log.timeStr||new Date(log.timestamp).toLocaleString())}</span>
+        </div>
+        ${!log.success&&log.failReason?`<div style="font-size:12px;color:var(--danger);margin-bottom:10px;padding:6px 10px;background:rgba(239,68,68,0.06);border-radius:6px;">⚠️ ${escHtml(log.failReason)}</div>`:''}
+        <div class="log-grid">
+          <div class="log-item"><div class="log-item-label">🌐 IP Address</div><div class="log-item-value">${escHtml(log.ip||'?')}</div></div>
+          <div class="log-item"><div class="log-item-label">📍 Location</div><div class="log-item-value">${escHtml((log.city||'?')+', '+(log.country||'?'))}</div></div>
+          <div class="log-item"><div class="log-item-label">🏢 ISP / Org</div><div class="log-item-value">${escHtml(log.isp||'?')}</div></div>
+          <div class="log-item"><div class="log-item-label">📱 Device</div><div class="log-item-value">${escHtml((log.device||'?')+' · '+(log.os||'?'))}</div></div>
+          <div class="log-item"><div class="log-item-label">🌍 Browser</div><div class="log-item-value">${escHtml(log.browser||'?')}</div></div>
+          <div class="log-item"><div class="log-item-label">🗣️ Language</div><div class="log-item-value">${escHtml(log.language||'?')}</div></div>
+          <div class="log-item"><div class="log-item-label">🖥️ Screen</div><div class="log-item-value">${escHtml(log.screen||'?')}</div></div>
+        </div>
+      </div>`).join('');
+  }catch(err){list.innerHTML='<p style="color:var(--danger);font-size:13px;padding:16px;">Error: '+err.message+'</p>';}
+}
+
+async function clearActivityLog(){
+  if(!confirm('সব activity log delete করবেন?'))return;
+  const {getDocs,collection,writeBatch,doc}=window._fbFns;const db=window._db;
+  try{
+    const snap=await getDocs(collection(db,'activity_logs'));
+    const batch=writeBatch(db);
+    snap.docs.forEach(d=>batch.delete(doc(db,'activity_logs',d.id)));
+    await batch.commit();
+    showToast('🗑️ Logs cleared!','success');
+    loadActivityLog();
+  }catch(err){showToast('Failed: '+err.message,'error');}
+}
+
+// ===== MASTER PASSCODE PROTECTED EXPORT =====
+let _isMasterUser=false; // set true when master passcode used to login
+
+function checkMasterAndExport(){
+  if(_isMasterUser){
+    // Already logged in as master — export directly
+    exportAllVCF('user');
+  } else {
+    // Prompt for master passcode
+    document.getElementById('masterPromptInput').value='';
+    document.getElementById('masterPromptError').style.display='none';
+    openModal('masterPromptModal');
+    setTimeout(()=>document.getElementById('masterPromptInput').focus(),200);
+  }
+}
+
+function verifyMasterAndExport(){
+  const input=document.getElementById('masterPromptInput').value.trim();
+  const errBox=document.getElementById('masterPromptError');
+  if(input===MASTER_PASSCODE){
+    closeModal('masterPromptModal');
+    document.getElementById('masterPromptInput').value='';
+    errBox.style.display='none';
+    exportAllVCF('user');
+  } else {
+    errBox.textContent='⛔ Wrong master passcode!';
+    errBox.style.display='block';
+    document.getElementById('masterPromptInput').value='';
+    document.getElementById('masterPromptInput').focus();
+  }
 }
 
 // ===== EXPORT ALL AS VCF =====
