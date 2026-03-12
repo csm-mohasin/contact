@@ -896,12 +896,12 @@ async function userLogin(){
   if(!input){showToast('Enter passcode!','error');return;}
   const errBox=document.getElementById('userLoginError');
   errBox.style.display='none';
-  const btn=document.getElementById('userLoginBtn');btn.disabled=true;btn.textContent='Checking...';
+  const btn=document.getElementById('userLoginBtn');
+  btn.disabled=true;btn.textContent='Checking...';
 
   const isOnline=navigator.onLine;
 
   // ── MASTER PASSCODE ──────────────────────────────────────
-  // Always allowed. Online: fetch fresh. Offline: use cache.
   if(input===MASTER_PASSCODE){
     if(isOnline){
       try{
@@ -909,101 +909,110 @@ async function userLogin(){
         const cSnap=await getDocs(collection(window._db,'contacts'));
         const contacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
         setCachedContacts(contacts);
+        btn.disabled=false;btn.textContent='Access Contacts →';
         showToast('✅ Access granted!','success');
-        showUserScreen(contacts);
-      }catch(err){
-        // Firebase failed despite being "online" (slow connection)
+        showUserScreen(contacts);return;
+      }catch(e){
         const cached=getCachedContacts();
-        if(cached){showToast('📦 Using cached contacts','warn');showUserScreen(cached);}
-        else{errBox.textContent='⛔ Could not load contacts. Try again.';errBox.style.display='block';}
+        if(cached){btn.disabled=false;btn.textContent='Access Contacts →';showToast('📦 Cached contacts','warn');showUserScreen(cached);return;}
+        errBox.textContent='⛔ Contacts load হচ্ছে না।';errBox.style.display='block';
+        btn.disabled=false;btn.textContent='Access Contacts →';return;
       }
     }else{
-      // Offline — master always allowed, use cache
       const cached=getCachedContacts();
-      if(cached){showToast('📦 Offline — cached contacts','warn');showUserScreen(cached);}
-      else{errBox.textContent='⛔ No internet & no cached data yet. Login online first.';errBox.style.display='block';}
+      btn.disabled=false;btn.textContent='Access Contacts →';
+      if(cached){showToast('📦 Offline mode','warn');showUserScreen(cached);}
+      else{errBox.textContent='⛔ No internet & no cached data.';errBox.style.display='block';}
+      return;
     }
-    btn.disabled=false;btn.textContent='Access Contacts →';return;
   }
 
-  // ── REGULAR PASSCODE ─────────────────────────────────────
+  // ── OFFLINE REGULAR PASSCODE ─────────────────────────────
   if(!isOnline){
-    // Offline: only allow if passcode was previously verified online
     const token=getCachedPassToken(input);
-    if(!token){
-      errBox.textContent='⛔ No internet. This passcode needs online verification first.';
-      errBox.style.display='block';btn.disabled=false;btn.textContent='Access Contacts →';return;
-    }
-    // Offline — use cache (limit enforced online, can't recheck here)
     const cached=getCachedContacts();
-    if(cached){showToast('📦 Offline mode — cached contacts','warn');showUserScreen(cached);}
-    else{errBox.textContent='⛔ No cached data. Login online first.';errBox.style.display='block';}
-    btn.disabled=false;btn.textContent='Access Contacts →';return;
+    btn.disabled=false;btn.textContent='Access Contacts →';
+    if(token&&cached){showToast('📦 Offline mode','warn');showUserScreen(cached);}
+    else{errBox.textContent='⛔ Internet নেই। আগে একবার online-এ login করুন।';errBox.style.display='block';}
+    return;
   }
 
-  // Online: full verification
-  const {getDocs,collection,doc,updateDoc}=window._fbFns;const db=window._db;
+  // ── ONLINE: Firebase full verification ───────────────────
   try{
-    let snap;
-    try{
-      snap=await getDocs(collection(db,'passcodes'));
-    }catch(fetchErr){
-      // Firebase fetch failed — try offline cache fallback
-      const cached=getCachedContacts();
-      const token=getCachedPassToken(input);
-      if(cached&&token){showToast('📦 Offline mode — cached contacts','warn');showUserScreen(cached);}
-      else{errBox.textContent='⛔ Firebase সংযোগ হচ্ছে না। Internet চেক করুন অথবা আগে একবার online-এ login করুন।';errBox.style.display='block';}
-      btn.disabled=false;btn.textContent='Access Contacts →';return;
-    }
+    const {getDocs,collection,doc,updateDoc}=window._fbFns;
+    const db=window._db;
+
+    // Step 1: Read passcodes
+    const snap=await getDocs(collection(db,'passcodes'));
     const codes=snap.docs.map(d=>({id:d.id,...d.data()}));
     const now=new Date();
     let matched=null,errMsg='';
+
     for(const pc of codes){
       if(pc.code!==input)continue;
-      if(!pc.enabled){errMsg='এই passcode টি disabled করা আছে।';break;}
-      if(pc.expiry&&new Date(pc.expiry)<now){errMsg='এই passcode টি '+pc.expiry+' তারিখে expire হয়ে গেছে।';break;}
+      if(!pc.enabled){errMsg='এই passcode টি disabled।';break;}
+      if(pc.expiry&&new Date(pc.expiry)<now){errMsg='Passcode expire হয়ে গেছে ('+pc.expiry+')।';break;}
       const used=pc.usedCount||0,limit=pc.limit||0;
       if(limit>0&&used>=limit){
         deleteCachedPassToken(input);
-        if(pc.oneTime){errMsg='এই passcode টি one-time ছিল এবং ইতিমধ্যে ব্যবহার হয়ে গেছে।';}
-        else{errMsg='এই passcode-এর limit শেষ ('+limit+' বার ব্যবহার হয়েছে)।';}
+        errMsg=pc.oneTime?'এই one-time passcode ইতিমধ্যে ব্যবহার হয়েছে।':'Passcode limit শেষ ('+used+'/'+limit+')।';
         break;
       }
       matched=pc;break;
     }
-    if(errMsg||!matched){
-      errBox.textContent='⛔ '+(errMsg||'Wrong passcode!');errBox.style.display='block';
+
+    if(!matched){
+      errBox.textContent='⛔ '+(errMsg||'Wrong passcode!');
+      errBox.style.display='block';
       btn.disabled=false;btn.textContent='Access Contacts →';return;
     }
-    // Update usedCount FIRST — so next login correctly sees the incremented count
-    const newCount=(matched.usedCount||0)+1;
-    try{
-      const updateData={usedCount:newCount};
-      if(matched.oneTime){updateData.enabled=false;}
-      await updateDoc(doc(db,'passcodes',matched.id),updateData);
-      if(matched.oneTime){deleteCachedPassToken(input);}
-      else{setCachedPassToken(input,newCount);}
-    }catch(uErr){
-      console.warn('Passcode update failed:',uErr);
-      if(!matched.oneTime)setCachedPassToken(input,newCount);
-    }
-    // Then fetch contacts
-    let contacts=[];
+
+    // Step 2: Load contacts FIRST (most important)
+    let contacts=null;
     try{
       const cSnap=await getDocs(collection(db,'contacts'));
       contacts=cSnap.docs.map(d=>({id:d.id,...d.data()}));
       setCachedContacts(contacts);
     }catch(cErr){
-      const cached=getCachedContacts();
-      if(cached){contacts=cached;showToast('📦 Cached contacts loaded','warn');}
-      else{errBox.textContent='⛔ Contacts লোড হচ্ছে না। Internet চেক করুন।';errBox.style.display='block';btn.disabled=false;btn.textContent='Access Contacts →';return;}
+      contacts=getCachedContacts();
+      if(!contacts){
+        errBox.textContent='⛔ Contacts load হচ্ছে না। Firebase rules চেক করুন।';
+        errBox.style.display='block';
+        btn.disabled=false;btn.textContent='Access Contacts →';return;
+      }
+      showToast('📦 Cached contacts','warn');
     }
+
+    // Step 3: Update usedCount (best effort — don't block if rules deny write)
+    const newCount=(matched.usedCount||0)+1;
+    try{
+      const upd={usedCount:newCount};
+      if(matched.oneTime)upd.enabled=false;
+      await updateDoc(doc(db,'passcodes',matched.id),upd);
+      if(matched.oneTime)deleteCachedPassToken(input);
+      else setCachedPassToken(input,newCount);
+    }catch(uErr){
+      // Write blocked by Firebase rules — store locally and warn
+      console.warn('usedCount update blocked:',uErr.message);
+      if(!matched.oneTime)setCachedPassToken(input,newCount);
+      // Still allow login — contacts already loaded
+    }
+
+    btn.disabled=false;btn.textContent='Access Contacts →';
     showToast('✅ Access granted!','success');
     showUserScreen(contacts);
+
   }catch(err){
-    errBox.textContent='⛔ Unexpected error: '+err.message;errBox.style.display='block';
+    // Top-level error — check if it's a rules/permission error
+    const msg=err.message||'';
+    if(msg.includes('permission')||msg.includes('PERMISSION_DENIED')){
+      errBox.textContent='⛔ Firebase permission denied। Firestore rules চেক করুন।';
+    }else{
+      errBox.textContent='⛔ Error: '+msg;
+    }
+    errBox.style.display='block';
+    btn.disabled=false;btn.textContent='Access Contacts →';
   }
-  finally{btn.disabled=false;btn.textContent='Access Contacts →';}
 }
 
 function userLogout(){_allContacts=[];document.getElementById('userPasscode').value='';document.getElementById('userLoginError').style.display='none';showScreen('landingScreen');}
@@ -1011,22 +1020,36 @@ function userLogout(){_allContacts=[];document.getElementById('userPasscode').va
 // ===== USER RENDER =====
 function renderUserContacts(){
   const q=(document.getElementById('userSearch')?.value||'').trim().toLowerCase();
+  // Include ALL contacts, even those without phones
   let favs=_allContacts.filter(c=>c.starred);
   let nonFavs=_allContacts.filter(c=>!c.starred);
-  const sf=(a,b)=>_userSortAZ?a.name.localeCompare(b.name):b.name.localeCompare(a.name);
+  const sf=(a,b)=>_userSortAZ?(a.name||'').localeCompare(b.name||''):(b.name||'').localeCompare(a.name||'');
   favs.sort(sf);nonFavs.sort(sf);
   let list=_userFavFilter?favs:[...favs,...nonFavs];
   if(q)list=smartFilter(list,q);
   const table=document.getElementById('userContactsTable');
-  if(!list.length){table.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No contacts found</p></div>';return;}
+  if(!list.length){
+    table.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No contacts found</p><p style="font-size:11px;color:var(--muted);margin-top:8px;">Total in memory: '+_allContacts.length+'</p></div>';
+    return;
+  }
   const favList=list.filter(c=>c.starred);
   const nonFavList=list.filter(c=>!c.starred);
   function buildRows(arr){
-    return arr.map(c=>(c.phones||[]).map((p,i)=>`<tr>
-      ${i===0?`<td class="user-name" rowspan="${c.phones.length}"><button class="star-btn" onclick="toggleStar('${c.id}')">${c.starred?'⭐':'☆'}</button>${hl(c.name,q)}</td>`:''}
-      <td class="user-number" onclick="copyPhone('${escHtml(p)}')">${hl(p,q)}</td>
-      <td style="width:40px;"><button class="copy-btn" onclick="copyPhone('${escHtml(p)}')">📋</button></td>
-    </tr>`).join('')).join('');
+    return arr.map(c=>{
+      const phones=Array.isArray(c.phones)?c.phones:(c.phones?[c.phones]:[]);
+      if(!phones.length){
+        return `<tr>
+          <td class="user-name"><button class="star-btn" onclick="toggleStar('${c.id}')">${c.starred?'⭐':'☆'}</button>${hl(c.name||'Unknown',q)}</td>
+          <td class="user-number" style="color:var(--muted);">—</td>
+          <td></td>
+        </tr>`;
+      }
+      return phones.map((p,i)=>`<tr>
+        ${i===0?`<td class="user-name" rowspan="${phones.length}"><button class="star-btn" onclick="toggleStar('${c.id}')">${c.starred?'⭐':'☆'}</button>${hl(c.name||'Unknown',q)}</td>`:''}
+        <td class="user-number" onclick="copyPhone('${escHtml(p)}')">${hl(p,q)}</td>
+        <td style="width:40px;"><button class="copy-btn" onclick="copyPhone('${escHtml(p)}')">📋</button></td>
+      </tr>`).join('');
+    }).join('');
   }
   let html='<table class="user-table"><thead><tr><th>Name</th><th>Phone Number</th><th></th></tr></thead><tbody>';
   if(favList.length){html+=`<tr><td colspan="3" class="section-divider">⭐ Starred (${favList.length})</td></tr>`;html+=buildRows(favList);}

@@ -1,7 +1,7 @@
 // Contact Vault — Service Worker
 // Handles offline caching of the app shell
 
-const CACHE_NAME = 'contact-vault-v1';
+const CACHE_NAME = 'contact-vault-v4';
 
 // App shell files to cache on install
 const PRECACHE_URLS = [
