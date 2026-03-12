@@ -1010,7 +1010,7 @@ const MASTER_PASSCODE='samiya';
 function setCachedContacts(data){try{localStorage.setItem('cv_cache',JSON.stringify(data));}catch{}}
 function getCachedContacts(){try{const d=localStorage.getItem('cv_cache');return d?JSON.parse(d):null;}catch{return null;}}
 // Stores which passcodes have been SUCCESSFULLY verified online (with their used count at that time)
-function setCachedPassToken(code,usedCount){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');t[code]={usedCount,ts:Date.now()};localStorage.setItem('cv_pass_tokens',JSON.stringify(t));}catch{}}
+function setCachedPassToken(code,usedCount,label=''){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');t[code]={usedCount,label,ts:Date.now()};localStorage.setItem('cv_pass_tokens',JSON.stringify(t));}catch{}}
 function getCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');return t[code]||null;}catch{return null;}}
 function deleteCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');delete t[code];localStorage.setItem('cv_pass_tokens',JSON.stringify(t));}catch{}}
 
@@ -1168,11 +1168,10 @@ async function userLogin(){
       if(matched.oneTime)upd.enabled=false;
       await updateDoc(doc(db,'passcodes',matched.id),upd);
       if(matched.oneTime)deleteCachedPassToken(input);
-      else setCachedPassToken(input,newCount);
+      else setCachedPassToken(input,newCount,matched.label||'');
     }catch(uErr){
-      // Write blocked by Firebase rules — store locally and warn
       console.warn('usedCount update blocked:',uErr.message);
-      if(!matched.oneTime)setCachedPassToken(input,newCount);
+      if(!matched.oneTime)setCachedPassToken(input,newCount,matched.label||'');
       // Still allow login — contacts already loaded
     }
 
