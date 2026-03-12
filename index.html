@@ -1293,32 +1293,31 @@ async function mergeAllDuplicates(){
 // ===== ACTIVITY LOG =====
 async function logLoginActivity(passcodeLabel, passcodeCode, success, failReason=''){
   try{
-    // Get IP info - try multiple APIs with fallback
+    // Get IP info using JSONP to bypass CORS
     let ipInfo={ip:'Unknown',city:'Unknown',country:'Unknown',org:'Unknown'};
-    const ipApis=[
-      async()=>{
-        const r=await fetch('https://ipwho.is/',{signal:AbortSignal.timeout(5000)});
-        if(!r.ok)throw new Error('fail');
+    try{
+      // ip-api.com supports JSONP callback — works from any origin
+      ipInfo = await new Promise((resolve,reject)=>{
+        const cb='_ipcb'+Date.now();
+        const s=document.createElement('script');
+        const t=setTimeout(()=>{cleanup();reject(new Error('timeout'));},5000);
+        function cleanup(){try{document.head.removeChild(s);}catch(e){}delete window[cb];}
+        window[cb]=function(d){
+          clearTimeout(t);cleanup();
+          if(d&&d.status==='success')resolve({ip:d.query,city:d.city,country:d.country,org:d.isp||d.org||'?'});
+          else reject(new Error('fail'));
+        };
+        s.src=`http://ip-api.com/json/?fields=status,query,city,country,isp,org&callback=${cb}`;
+        s.onerror=()=>{clearTimeout(t);cleanup();reject(new Error('script error'));};
+        document.head.appendChild(s);
+      });
+    }catch(e1){
+      // Fallback: try ipify for just IP, then skip location
+      try{
+        const r=await fetch('https://api64.ipify.org?format=json',{signal:AbortSignal.timeout(4000)});
         const d=await r.json();
-        if(!d.success)throw new Error('fail');
-        return {ip:d.ip,city:d.city,country:d.country,org:d.connection?.isp||d.connection?.org||'?'};
-      },
-      async()=>{
-        const r=await fetch('https://freeipapi.com/api/json',{signal:AbortSignal.timeout(5000)});
-        if(!r.ok)throw new Error('fail');
-        const d=await r.json();
-        return {ip:d.ipAddress,city:d.cityName,country:d.countryName,org:d.isp||'?'};
-      },
-      async()=>{
-        const r=await fetch('https://ipapi.co/json/',{signal:AbortSignal.timeout(5000)});
-        if(!r.ok)throw new Error('fail');
-        const d=await r.json();
-        return {ip:d.ip,city:d.city,country:d.country_name,org:d.org||d.asn||'?'};
-      }
-    ];
-    for(const fn of ipApis){
-      try{ipInfo=await fn();if(ipInfo.ip&&ipInfo.ip!=='Unknown')break;}
-      catch(e){}
+        ipInfo={ip:d.ip||'Unknown',city:'N/A',country:'N/A',org:'N/A'};
+      }catch(e2){}
     }
 
     // Device/browser info
