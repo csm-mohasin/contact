@@ -1293,12 +1293,33 @@ async function mergeAllDuplicates(){
 // ===== ACTIVITY LOG =====
 async function logLoginActivity(passcodeLabel, passcodeCode, success, failReason=''){
   try{
-    // Get IP and location info
+    // Get IP info - try multiple APIs with fallback
     let ipInfo={ip:'Unknown',city:'Unknown',country:'Unknown',org:'Unknown'};
-    try{
-      const r=await fetch('https://ipapi.co/json/');
-      if(r.ok){const d=await r.json();ipInfo={ip:d.ip||'?',city:d.city||'?',country:d.country_name||'?',org:d.org||'?'};}
-    }catch(e){}
+    const ipApis=[
+      async()=>{
+        const r=await fetch('https://ipwho.is/',{signal:AbortSignal.timeout(5000)});
+        if(!r.ok)throw new Error('fail');
+        const d=await r.json();
+        if(!d.success)throw new Error('fail');
+        return {ip:d.ip,city:d.city,country:d.country,org:d.connection?.isp||d.connection?.org||'?'};
+      },
+      async()=>{
+        const r=await fetch('https://freeipapi.com/api/json',{signal:AbortSignal.timeout(5000)});
+        if(!r.ok)throw new Error('fail');
+        const d=await r.json();
+        return {ip:d.ipAddress,city:d.cityName,country:d.countryName,org:d.isp||'?'};
+      },
+      async()=>{
+        const r=await fetch('https://ipapi.co/json/',{signal:AbortSignal.timeout(5000)});
+        if(!r.ok)throw new Error('fail');
+        const d=await r.json();
+        return {ip:d.ip,city:d.city,country:d.country_name,org:d.org||d.asn||'?'};
+      }
+    ];
+    for(const fn of ipApis){
+      try{ipInfo=await fn();if(ipInfo.ip&&ipInfo.ip!=='Unknown')break;}
+      catch(e){}
+    }
 
     // Device/browser info
     const ua=navigator.userAgent;
