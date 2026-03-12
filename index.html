@@ -877,7 +877,10 @@ function getCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('c
 function deleteCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');delete t[code];localStorage.setItem('cv_pass_tokens',JSON.stringify(t));}catch{}}
 
 function showUserScreen(contacts){
-  // Normalize — ensure phones is always an array
+  // Reset filters on every fresh login
+  _userFavFilter=false;
+  _userSortAZ=true;
+  // Normalize phones
   contacts=contacts.map(c=>({...c,phones:Array.isArray(c.phones)?c.phones:(c.phones?[c.phones]:[])}));
   const favs=getFavs();contacts.forEach(c=>{if(favs.includes(c.id))c.starred=true;});
   _allContacts=contacts;
@@ -886,8 +889,13 @@ function showUserScreen(contacts){
   document.getElementById('userTotalContacts').textContent=contacts.length;
   document.getElementById('userTotalNumbers').textContent=totalNums;
   document.getElementById('userTotalFavs').textContent=totalFavs;
+  // Reset filter button UI
+  const favBtn=document.getElementById('userFavBtn');
+  if(favBtn)favBtn.classList.remove('fav-active');
+  const sortBtn=document.getElementById('userSortBtn');
+  if(sortBtn)sortBtn.textContent='⬆ A→Z';
   showScreen('userScreen');
-  setTimeout(()=>renderUserContacts(),50); // slight delay to ensure DOM is ready
+  setTimeout(()=>renderUserContacts(),50);
 }
 
 // ===== USER LOGIN (Master + Multi-Passcode + Limit + Expiry + Offline) =====
@@ -1020,9 +1028,10 @@ function userLogout(){_allContacts=[];document.getElementById('userPasscode').va
 // ===== USER RENDER =====
 function renderUserContacts(){
   const q=(document.getElementById('userSearch')?.value||'').trim().toLowerCase();
-  // Include ALL contacts, even those without phones
-  let favs=_allContacts.filter(c=>c.starred);
-  let nonFavs=_allContacts.filter(c=>!c.starred);
+  // Ensure all contacts have proper starred boolean
+  _allContacts.forEach(c=>{if(c.starred===undefined||c.starred===null)c.starred=false;});
+  let favs=_allContacts.filter(c=>c.starred===true);
+  let nonFavs=_allContacts.filter(c=>c.starred!==true);
   const sf=(a,b)=>_userSortAZ?(a.name||'').localeCompare(b.name||''):(b.name||'').localeCompare(a.name||'');
   favs.sort(sf);nonFavs.sort(sf);
   let list=_userFavFilter?favs:[...favs,...nonFavs];
@@ -1032,8 +1041,8 @@ function renderUserContacts(){
     table.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><p>No contacts found</p><p style="font-size:11px;color:var(--muted);margin-top:8px;">Total in memory: '+_allContacts.length+'</p></div>';
     return;
   }
-  const favList=list.filter(c=>c.starred);
-  const nonFavList=list.filter(c=>!c.starred);
+  const favList=list.filter(c=>c.starred===true);
+  const nonFavList=list.filter(c=>c.starred!==true);
   function buildRows(arr){
     return arr.map(c=>{
       const phones=Array.isArray(c.phones)?c.phones:(c.phones?[c.phones]:[]);
