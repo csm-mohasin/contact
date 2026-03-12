@@ -559,12 +559,54 @@ const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);const db=getFirestore(app);
 window._auth=auth;window._db=db;
 window._fbFns={signInWithEmailAndPassword,signOut,onAuthStateChanged,collection,doc,setDoc,addDoc,getDocs,getDoc,deleteDoc,updateDoc,writeBatch};
-onAuthStateChanged(auth,user=>{if(user&&window.location.hash==='#admin')loadAdminDashboard();});
+onAuthStateChanged(auth,user=>{if(user&&window.location.hash.startsWith('#/admin'))loadAdminDashboard();});
 </script>
 
 <script>
 // ===== UTILS =====
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+// ===== HASH ROUTER =====
+let _currentUserLabel='';
+
+// Encode label to base62-like token so URL looks like a session token
+function encodeToken(str){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let hash=0;
+  for(let i=0;i<str.length;i++){hash=((hash<<5)-hash+str.charCodeAt(i))|0;}
+  // Deterministic 12-char token from label
+  let token='';let seed=Math.abs(hash)||1;
+  for(let i=0;i<12;i++){seed=(seed*1664525+1013904223)&0xFFFFFFFF;token+=chars[Math.abs(seed)%chars.length];}
+  // Add 4 random chars for variation
+  return 'v1.'+token;
+}
+
+// Update URL when screen changes
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='landingScreen')         history.replaceState(null,'','#/');
+  else if(id==='adminLoginScreen') history.replaceState(null,'','#/auth/signin');
+  else if(id==='adminScreen')      history.replaceState(null,'','#/dashboard/overview');
+  else if(id==='userLoginScreen')  history.replaceState(null,'','#/access');
+  else if(id==='userScreen'){
+    const token=_currentUserLabel?encodeToken(_currentUserLabel):'v1.'+encodeToken('guest');
+    history.replaceState(null,'','#/session/'+token);
+  }
+}
+
+// On browser back/forward
+window.addEventListener('hashchange',()=>{
+  const hash=window.location.hash;
+  if(hash==='#/'||hash===''||hash==='#'){
+    if(document.getElementById('userScreen').classList.contains('active')){userLogout();}
+    else if(!document.getElementById('adminScreen').classList.contains('active')){showScreen('landingScreen');}
+  } else if(hash==='#/access'){
+    if(!document.getElementById('userScreen').classList.contains('active'))showScreen('userLoginScreen');
+  } else if(hash==='#/auth/signin'){
+    if(!document.getElementById('adminScreen').classList.contains('active'))showScreen('adminLoginScreen');
+  }
+});
+
+// ===== UTILS (original) =====
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function showToast(msg,type='info'){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;clearTimeout(window._tt);window._tt=setTimeout(()=>{t.className='';},3500);}
@@ -946,7 +988,8 @@ function setCachedPassToken(code,usedCount){try{const t=JSON.parse(localStorage.
 function getCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');return t[code]||null;}catch{return null;}}
 function deleteCachedPassToken(code){try{const t=JSON.parse(localStorage.getItem('cv_pass_tokens')||'{}');delete t[code];localStorage.setItem('cv_pass_tokens',JSON.stringify(t));}catch{}}
 
-function showUserScreen(contacts){
+function showUserScreen(contacts, label=''){
+  _currentUserLabel=label||'';
   // Reset filters on every fresh login
   _userFavFilter=false;
   _userSortAZ=true;
@@ -1003,6 +1046,7 @@ async function userLogin(){
         showToast('✅ Master access granted!','success');
         // Master passcode → full admin dashboard
         _allContacts=contacts;
+        _currentUserLabel='master';
         const favs=getFavs();_allContacts.forEach(c=>{if(favs.includes(c.id))c.starred=true;});
         showDupBanner(detectDuplicates(_allContacts));
         showScreen('adminScreen');
@@ -1038,7 +1082,7 @@ async function userLogin(){
     const token=getCachedPassToken(input);
     const cached=getCachedContacts();
     btn.disabled=false;btn.textContent='Access Contacts →';
-    if(token&&cached){showToast('📦 Offline mode','warn');showUserScreen(cached);}
+    if(token&&cached){showToast('📦 Offline mode','warn');showUserScreen(cached, token.label||'user');}
     else{errBox.textContent='⛔ Internet নেই। আগে একবার online-এ login করুন।';errBox.style.display='block';}
     return;
   }
@@ -1108,7 +1152,7 @@ async function userLogin(){
     logLoginActivity(matched.label||'User', matched.code, true);
     btn.disabled=false;btn.textContent='Access Contacts →';
     showToast('✅ Access granted!','success');
-    showUserScreen(contacts);
+    showUserScreen(contacts, matched.label||'user');
 
   }catch(err){
     // Top-level error — check if it's a rules/permission error
@@ -1123,7 +1167,7 @@ async function userLogin(){
   }
 }
 
-function userLogout(){_allContacts=[];_isMasterUser=false;document.getElementById('userPasscode').value='';document.getElementById('userLoginError').style.display='none';showScreen('landingScreen');}
+function userLogout(){_allContacts=[];_isMasterUser=false;_currentUserLabel='';document.getElementById('userPasscode').value='';document.getElementById('userLoginError').style.display='none';showScreen('landingScreen');}
 
 // ===== USER RENDER =====
 function renderUserContacts(){
